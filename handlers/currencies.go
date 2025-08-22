@@ -4,7 +4,7 @@ import (
 	"cryptoswap/models"
 	"cryptoswap/services"
 	"encoding/json"
-	"html/template"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -27,9 +27,9 @@ func (h *CurrencyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Si es una petición HTMX para un select, devolver opciones HTML
-	if r.Header.Get("HX-Request") == "true" && r.URL.Query().Get("format") == "options" {
-		h.renderOptions(w, currencies)
+	// Si es una petición HTMX (para los selects), devolver opciones HTML
+	if r.Header.Get("HX-Request") == "true" {
+		h.renderSelectOptions(w, currencies)
 		return
 	}
 	
@@ -38,58 +38,48 @@ func (h *CurrencyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(currencies)
 }
 
-// renderOptions renderiza las monedas como opciones de select
-func (h *CurrencyHandler) renderOptions(w http.ResponseWriter, currencies []models.Currency) {
-	// Priorizar monedas populares
+// renderSelectOptions renderiza las monedas como opciones de select
+func (h *CurrencyHandler) renderSelectOptions(w http.ResponseWriter, currencies []models.Currency) {
+	// Monedas populares para mostrar primero
 	popularSymbols := map[string]bool{
 		"btc": true, "eth": true, "usdt": true, "usdc": true,
 		"bnb": true, "sol": true, "ada": true, "dot": true,
 		"matic": true, "avax": true, "link": true, "uni": true,
+		"xrp": true, "ltc": true, "atom": true, "near": true,
 	}
-	
-	tmpl := `
-	<optgroup label="Popular">
-		{{range .Popular}}
-		<option value="{{.Symbol}}">{{.Symbol | upper}} - {{.Name}}</option>
-		{{end}}
-	</optgroup>
-	<optgroup label="All Currencies">
-		{{range .All}}
-		<option value="{{.Symbol}}">{{.Symbol | upper}} - {{.Name}}</option>
-		{{end}}
-	</optgroup>`
 	
 	// Separar populares del resto
 	popular := make([]models.Currency, 0)
-	all := make([]models.Currency, 0)
+	others := make([]models.Currency, 0)
 	
 	for _, curr := range currencies {
-		if popularSymbols[curr.Symbol] {
+		if popularSymbols[strings.ToLower(curr.Symbol)] {
 			popular = append(popular, curr)
 		} else {
-			all = append(all, curr)
+			others = append(others, curr)
 		}
 	}
 	
-	funcMap := template.FuncMap{
-		"upper": strings.ToUpper,
+	// Renderizar HTML
+	html := `<optgroup label="Popular">`
+	for _, curr := range popular {
+		html += fmt.Sprintf(`<option value="%s">%s - %s</option>`, 
+			strings.ToLower(curr.Symbol), 
+			strings.ToUpper(curr.Symbol), 
+			curr.Name)
 	}
+	html += `</optgroup>`
 	
-	t, err := template.New("options").Funcs(funcMap).Parse(tmpl)
-	if err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
-		return
+	html += `<optgroup label="All Currencies">`
+	for _, curr := range others {
+		html += fmt.Sprintf(`<option value="%s">%s - %s</option>`, 
+			strings.ToLower(curr.Symbol), 
+			strings.ToUpper(curr.Symbol), 
+			curr.Name)
 	}
+	html += `</optgroup>`
 	
-	data := struct {
-		Popular []models.Currency
-		All     []models.Currency
-	}{
-		Popular: popular,
-		All:     all,
-	}
-	
-	t.Execute(w, data)
+	w.Write([]byte(html))
 }
 
 // GetExchanges obtiene la lista de exchanges disponibles
