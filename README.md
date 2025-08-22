@@ -4,7 +4,7 @@ Exchange aggregator minimalista con HTMX + Go
 
 ## ✨ Features
 
-- ✅ 3 exchanges reales (ChangeNOW, SimpleSwap, StealthEX)
+- ✅ 4 exchanges reales (ChangeNOW, SimpleSwap, StealthEX, LetsExchange)
 - ✅ Comparación de rates en tiempo real
 - ✅ Sin JavaScript (HTMX)
 - ✅ Interfaz moderna y minimalista
@@ -31,7 +31,8 @@ cryptoswap/
 ├── exchanges/             # Clientes API
 │   ├── changenow.go       
 │   ├── simpleswap.go      
-│   └── stealthex.go       
+│   ├── stealthex.go       
+│   └── letsexchange.go       
 │
 ├── models/                # Tipos compartidos
 │   └── types.go           
@@ -52,7 +53,7 @@ cd cryptoswap
 # Crear archivos (copiar el código de cada archivo)
 touch main.go .env go.mod
 touch models/types.go
-touch exchanges/{changenow,simpleswap,stealthex}.go
+touch exchanges/{changenow,simpleswap,stealthex,letsexchange}.go
 touch services/{aggregator,cache}.go
 touch handlers/{quote,currencies,swap}.go
 touch static/index.html
@@ -66,6 +67,7 @@ Editar `.env` con tus keys:
 CHANGENOW_API_KEY=tu_key_aqui
 SIMPLESWAP_API_KEY=tu_key_aqui
 STEALTHEX_API_KEY=tu_key_aqui
+LETSEXCHANGE_API_KEY=tu_key_aqui
 \`\`\`
 
 ### 3. Instalar dependencias

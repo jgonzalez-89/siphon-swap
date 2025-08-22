@@ -25,9 +25,10 @@ func main() {
 	changeNowKey := os.Getenv("CHANGENOW_API_KEY")
 	simpleSwapKey := os.Getenv("SIMPLESWAP_API_KEY")
 	stealthExKey := os.Getenv("STEALTHEX_API_KEY")
+	letsExchangeKey := os.Getenv("LETSEXCHANGE_API_KEY")
 
-	if changeNowKey == "" && simpleSwapKey == "" && stealthExKey == "" {
-		log.Fatal("❌ At least one API key is required. Please set CHANGENOW_API_KEY, SIMPLESWAP_API_KEY, or STEALTHEX_API_KEY in .env file")
+	if changeNowKey == "" && simpleSwapKey == "" && stealthExKey == "" && letsExchangeKey == "" {
+		log.Fatal("❌ At least one API key is required. Please set CHANGENOW_API_KEY, SIMPLESWAP_API_KEY, STEALTHEX_API_KEY, or LETSEXCHANGE_API_KEY in .env file")
 	}
 
 	// Crear aggregator
@@ -35,22 +36,28 @@ func main() {
 
 	// Añadir exchanges disponibles
 	exchangesAdded := 0
-	
+
 	if changeNowKey != "" {
 		aggregator.AddExchange(exchanges.NewChangeNow(changeNowKey))
 		log.Println("✅ ChangeNOW exchange added")
 		exchangesAdded++
 	}
-	
+
 	if simpleSwapKey != "" {
 		aggregator.AddExchange(exchanges.NewSimpleSwap(simpleSwapKey))
 		log.Println("✅ SimpleSwap exchange added")
 		exchangesAdded++
 	}
-	
+
 	if stealthExKey != "" {
 		aggregator.AddExchange(exchanges.NewStealthEx(stealthExKey))
 		log.Println("✅ StealthEX exchange added")
+		exchangesAdded++
+	}
+
+	if letsExchangeKey != "" {
+		aggregator.AddExchange(exchanges.NewLetsExchange(letsExchangeKey))
+		log.Println("✅ LetsExchange exchange added")
 		exchangesAdded++
 	}
 
@@ -82,23 +89,23 @@ func main() {
 
 	// API endpoints
 	api := r.PathPrefix("/api").Subrouter()
-	
+
 	// Quotes
 	api.HandleFunc("/quote", quoteHandler.GetQuote).Methods("GET", "POST")
 	api.HandleFunc("/quotes", quoteHandler.GetAllQuotes).Methods("POST")
 	api.HandleFunc("/min-amounts", quoteHandler.GetMinAmounts).Methods("GET")
-	
+
 	// Currencies
 	api.HandleFunc("/currencies", currencyHandler.GetAll).Methods("GET")
 	api.HandleFunc("/exchanges", currencyHandler.GetExchanges).Methods("GET")
-	
+
 	// Swap
 	api.HandleFunc("/swap", swapHandler.CreateSwap).Methods("POST")
 	api.HandleFunc("/swap/{id}/status", swapHandler.GetStatus).Methods("GET")
-	
+
 	// Ticker (precio mock por ahora)
 	api.HandleFunc("/ticker", handleTicker).Methods("GET")
-	
+
 	// Health check
 	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -129,7 +136,7 @@ func main() {
 	log.Printf("   - API Health: http://localhost:%s/api/health", port)
 	log.Printf("   - Currencies: http://localhost:%s/api/currencies", port)
 	log.Println("──────────────────────────────────────")
-	
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}
@@ -139,12 +146,12 @@ func main() {
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Wrap ResponseWriter para capturar el status
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: 200}
-		
+
 		next.ServeHTTP(wrapped, r)
-		
+
 		// No loguear archivos estáticos
 		if r.URL.Path != "/" && r.URL.Path != "/favicon.ico" {
 			log.Printf("%s %s %d %v", r.Method, r.URL.Path, wrapped.statusCode, time.Since(start))
@@ -158,12 +165,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, HX-Request")
-		
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
