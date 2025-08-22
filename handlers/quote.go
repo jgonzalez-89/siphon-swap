@@ -99,77 +99,154 @@ func (h *QuoteHandler) GetAllQuotes(w http.ResponseWriter, r *http.Request) {
 // renderHTMLQuotes renderiza las cotizaciones como HTML para HTMX
 func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.Quote, from, to string) {
 	tmpl := `
-	<div style="background: rgba(15, 23, 42, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
-		{{if .BestQuote}}
-		<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-			<span style="color: #94a3b8;">Best Rate</span>
-			<span style="color: #10b981; font-weight: 600;">{{.BestQuote.Exchange}}</span>
-		</div>
-		<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-			<span style="color: #94a3b8;">You receive</span>
-			<span style="color: white; font-size: 18px; font-weight: 600;">
-				{{printf "%.6f" .BestQuote.ToAmount}} {{.BestQuote.To}}
+	{{if .BestQuote}}
+	<!-- Best Quote Card -->
+	<div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+			<span style="color: #a78bfa; font-size: 12px; font-weight: 600; text-transform: uppercase;">Best Rate</span>
+			<span style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">
+				{{.BestQuote.Exchange}}
 			</span>
 		</div>
-		<div style="display: flex; justify-content: space-between;">
-			<span style="color: #94a3b8;">Rate</span>
-			<span style="color: white;">
-				1 {{.BestQuote.From}} = {{printf "%.6f" .BestQuote.Rate}} {{.BestQuote.To}}
-			</span>
-		</div>
-		{{end}}
-	</div>
-	
-	{{if gt (len .AllQuotes) 1}}
-	<details style="margin-top: 12px;">
-		<summary style="cursor: pointer; color: #94a3b8; font-size: 14px;">
-			Compare all {{len .AllQuotes}} exchanges
-		</summary>
-		<div style="margin-top: 8px;">
-			{{range .AllQuotes}}
-			<div style="background: rgba(15, 23, 42, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;"
-				 onclick="selectExchange('{{.Exchange}}')"
-				 onmouseover="this.style.background='rgba(15, 23, 42, 0.4)'"
-				 onmouseout="this.style.background='rgba(15, 23, 42, 0.2)'">
-				<div style="display: flex; justify-content: space-between; align-items: center;">
-					<div>
-						<span style="color: white; font-weight: 500;">{{.Exchange}}</span>
-						<div style="color: #64748b; font-size: 12px; margin-top: 2px;">
-							Rate: {{printf "%.6f" .Rate}}
-						</div>
-					</div>
-					<div style="text-align: right;">
-						<span style="color: white; font-size: 16px; font-weight: 600;">
-							{{printf "%.6f" .ToAmount}} {{.To}}
-						</span>
-						{{if eq .Exchange $.BestQuote.Exchange}}
-						<div style="color: #10b981; font-size: 11px; margin-top: 2px;">BEST RATE</div>
-						{{end}}
-					</div>
+		<div style="display: flex; justify-content: space-between; align-items: center;">
+			<div>
+				<div style="color: white; font-size: 24px; font-weight: 700;">
+					{{printf "%.8f" .BestQuote.ToAmount}} {{.BestQuote.To}}
+				</div>
+				<div style="color: #64748b; font-size: 12px; margin-top: 4px;">
+					Rate: 1 {{.BestQuote.From}} = {{printf "%.8f" .BestQuote.Rate}} {{.BestQuote.To}}
 				</div>
 			</div>
-			{{end}}
+			<div style="text-align: right;">
+				<button onclick="selectExchange('{{.BestQuote.Exchange}}')" 
+				        style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+					Use This
+				</button>
+			</div>
 		</div>
-	</details>
+	</div>
+	{{end}}
+	
+	{{if gt (len .AllQuotes) 1}}
+	<!-- All Exchanges Comparison -->
+	<div style="background: rgba(8, 10, 28, 0.4); border-radius: 12px; padding: 16px;">
+		<div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px;">
+			Compare All Exchanges ({{len .AllQuotes}} available)
+		</div>
+		
+		{{range $index, $quote := .AllQuotes}}
+		<div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid {{if eq $quote.Exchange $.BestQuote.Exchange}}rgba(139, 92, 246, 0.3){{else}}rgba(255, 255, 255, 0.05){{end}};"
+		     onclick="selectExchange('{{$quote.Exchange}}')"
+		     onmouseover="this.style.background='rgba(15, 23, 42, 0.6)'; this.style.borderColor='rgba(139, 92, 246, 0.4)'"
+		     onmouseout="this.style.background='rgba(15, 23, 42, 0.4)'; this.style.borderColor='{{if eq $quote.Exchange $.BestQuote.Exchange}}rgba(139, 92, 246, 0.3){{else}}rgba(255, 255, 255, 0.05){{end}}'">
+			<div style="display: flex; justify-content: space-between; align-items: center;">
+				<div>
+					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+						<span style="color: white; font-weight: 600; font-size: 14px;">{{$quote.Exchange}}</span>
+						{{if eq $quote.Exchange $.BestQuote.Exchange}}
+						<span style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">
+							BEST
+						</span>
+						{{end}}
+					</div>
+					<div style="color: #64748b; font-size: 12px;">
+						Rate: {{printf "%.8f" $quote.Rate}} {{$quote.To}}/{{$quote.From}}
+					</div>
+				</div>
+				<div style="text-align: right;">
+					<div style="color: white; font-size: 16px; font-weight: 600;">
+						{{printf "%.8f" $quote.ToAmount}} {{$quote.To}}
+					</div>
+					{{if ne $quote.Exchange $.BestQuote.Exchange}}
+					<div style="color: #ef4444; font-size: 11px; margin-top: 2px;">
+						-{{printf "%.2f" ($.Difference $quote.ToAmount $.BestQuote.ToAmount)}}%
+					</div>
+					{{end}}
+				</div>
+			</div>
+		</div>
+		{{end}}
+		
+		<div style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
+			<div style="display: flex; align-items: center; gap: 8px;">
+				<svg style="width: 16px; height: 16px; color: #10b981;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+				</svg>
+				<span style="color: #10b981; font-size: 12px;">
+					You save {{printf "%.2f" ($.SavingsPercent)}}% using Siphon vs single exchange
+				</span>
+			</div>
+		</div>
+	</div>
+	{{else if .BestQuote}}
+	<!-- Single Exchange Available -->
+	<div style="background: rgba(251, 146, 60, 0.1); border: 1px solid rgba(251, 146, 60, 0.2); border-radius: 8px; padding: 12px;">
+		<div style="display: flex; align-items: center; gap: 8px;">
+			<svg style="width: 16px; height: 16px; color: #fb923c;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+			</svg>
+			<span style="color: #fed7aa; font-size: 12px;">
+				Only 1 exchange supports this pair currently
+			</span>
+		</div>
+	</div>
 	{{end}}
 	
 	<script>
-		// Actualizar el campo de cantidad recibida
-		document.getElementById('toAmount').value = '{{printf "%.6f" .BestQuote.ToAmount}}';
-		// Habilitar el botón de swap
-		document.getElementById('swapButton').disabled = false;
-		document.getElementById('swapButton').textContent = 'Swap via {{.BestQuote.Exchange}}';
-		// Guardar el mejor exchange
-		document.getElementById('swapButton').setAttribute('data-exchange', '{{.BestQuote.Exchange}}');
+		// Update the "to" amount field
+		document.getElementById('toAmount').value = '{{printf "%.8f" .BestQuote.ToAmount}}';
+		// Enable swap button
+		var button = document.getElementById('swapButton');
+		button.disabled = false;
+		var buttonText = button.querySelector('span') || button;
+		if (buttonText.textContent) {
+			buttonText.textContent = 'Swap via {{.BestQuote.Exchange}}';
+		} else {
+			button.textContent = 'Swap via {{.BestQuote.Exchange}}';
+		}
+		button.setAttribute('data-exchange', '{{.BestQuote.Exchange}}');
 		
-		// Función para seleccionar un exchange específico
+		// Function to select a specific exchange
 		function selectExchange(exchange) {
-			document.getElementById('swapButton').textContent = 'Swap via ' + exchange;
-			document.getElementById('swapButton').setAttribute('data-exchange', exchange);
+			var button = document.getElementById('swapButton');
+			var buttonText = button.querySelector('span') || button;
+			if (buttonText.textContent) {
+				buttonText.textContent = 'Swap via ' + exchange;
+			} else {
+				button.textContent = 'Swap via ' + exchange;
+			}
+			button.setAttribute('data-exchange', exchange);
+			
+			// Highlight selected exchange
+			document.querySelectorAll('[onclick*="selectExchange"]').forEach(el => {
+				el.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+			});
+			event.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)';
 		}
 	</script>`
 	
-	t, err := template.New("quotes").Parse(tmpl)
+	// Create template with helper functions
+	funcMap := template.FuncMap{
+		"Difference": func(a, b float64) float64 {
+			if b == 0 {
+				return 0
+			}
+			return ((b - a) / b) * 100
+		},
+		"SavingsPercent": func() float64 {
+			if len(quotes) < 2 {
+				return 0
+			}
+			worst := quotes[len(quotes)-1].ToAmount
+			best := quotes[0].ToAmount
+			if worst == 0 {
+				return 0
+			}
+			return ((best - worst) / worst) * 100
+		},
+	}
+	
+	t, err := template.New("quotes").Funcs(funcMap).Parse(tmpl)
 	if err != nil {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
