@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoSwap - Simple & Secure</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0d1421;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Input number sin flechas */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        /* Loading animation */
+        .htmx-request .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            display: none;
+        }
+        
+        /* Smooth transitions */
+        .htmx-swapping {
+            opacity: 0;
+            transition: opacity 200ms ease-out;
+        }
+        
+        .htmx-settling {
+            opacity: 1;
+            transition: opacity 200ms ease-in;
+        }
+        
+        /* Custom select dropdown */
+        .token-select {
+            appearance: none;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            padding-right: 20px;
+        }
+        
+        .token-select:focus {
+            outline: none;
+        }
+        
+        /* Glassmorphism card */
+        .swap-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            width: 100%;
+            max-width: 480px;
+        }
+        
+        .input-section {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color 0.2s;
+        }
+        
+        .input-section:hover,
+        .input-section:focus-within {
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+        
+        .swap-button {
+            background: #1e293b;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: -8px auto;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid #0d1421;
+            z-index: 10;
+            position: relative;
+        }
+        
+        .swap-button:hover {
+            background: #334155;
+            transform: rotate(180deg);
+        }
+        
+        .primary-button {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        
+        .primary-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        .primary-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .wallet-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            width: 100%;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 24px;
+            transition: border-color 0.2s;
+        }
+        
+        .wallet-input:focus {
+            outline: none;
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+        
+        .wallet-input::placeholder {
+            color: #64748b;
+        }
+        
+        /* Token icons */
+        .token-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+        
+        .settings-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .settings-icon:hover {
+            opacity: 1;
+        }
+        
+        /* Rate display */
+        .rate-display {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        
+        /* Advanced settings (hidden by default) */
+        .advanced-settings {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .advanced-settings.open {
+            max-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="swap-card">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h1 style="font-size: 28px; font-weight: 700;">Swap</h1>
+            <svg class="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" onclick="toggleSettings()">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+        </div>
+
+        <!-- Advanced Settings (hidden) -->
+        <div id="advancedSettings" class="advanced-settings">
+            <div style="background: rgba(15, 23, 42, 0.4); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: #94a3b8; font-size: 14px;">Slippage Tolerance</span>
+                    <select name="slippage" style="background: transparent; border: none; color: white; cursor: pointer;">
+                        <option value="0.5">0.5%</option>
+                        <option value="1" selected>1%</option>
+                        <option value="3">3%</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94a3b8; font-size: 14px;">Route Priority</span>
+                    <select name="priority" style="background: transparent; border: none; color: white; cursor: pointer;">
+                        <option value="best">Best Price</option>
+                        <option value="fast">Fastest</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <form hx-post="/api/calculate" 
+              hx-trigger="change, keyup delay:500ms" 
+              hx-target="#rate-info"
+              hx-indicator=".spinner">
+            
+            <!-- From Section -->
+            <div class="input-section">
+                <label style="color: #64748b; font-size: 14px; display: block; margin-bottom: 8px;">From</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="number" 
+                           name="amount"
+                           placeholder="0"
+                           step="any"
+                           style="background: transparent; border: none; color: white; font-size: 32px; font-weight: 600; width: 100%; outline: none;"
+                           oninput="checkAmount()"
+                           id="fromAmount">
+                    
+                    <div style="display: flex; align-items: center; background: rgba(51, 65, 85, 0.5); border-radius: 12px; padding: 8px 12px;">
+                        <div class="token-icon" style="background: #627eea;">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDMyQzI0LjgzNjYgMzIgMzIgMjQuODM2NiAzMiAxNkMzMiA3LjE2MzQ0IDI0LjgzNjYgMCAxNiAwQzcuMTYzNDQgMCAwIDcuMTYzNDQgMCAxNkMwIDI0LjgzNjYgNy4xNjM0NCAzMiAxNiAzMloiIGZpbGw9IiM2MjdFRUEiLz4KPHBhdGggZD0iTTE2LjQ5OCA0VjEyLjg3TDIzLjQ5NSAxNi4yMkwxNi40OTggNFoiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuNjAyIi8+CjxwYXRoIGQ9Ik0xNi40OTggNEw5LjUgMTYuMjJMMTYuNDk4IDEyLjg3VjRaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTYuNDk4IDIxLjk2OFYyNy45OTVMMjMuNSAxNy42MTZMMTYuNDk4IDIxLjk2OFoiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuNjAyIi8+CjxwYXRoIGQ9Ik0xNi40OTggMjcuOTk1VjIxLjk2OEw5LjUgMTcuNjE2TDE2LjQ5OCAyNy45OTVaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTYuNDk4IDIwLjU3M0wyMy40OTUgMTYuMjJMMTYuNDk4IDEyLjg3MlYyMC41NzNaIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjIiLz4KPHBhdGggZD0iTTkuNSAxNi4yMkwxNi40OTggMjAuNTczVjEyLjg3Mkw5LjUgMTYuMjJaIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjYwMiIvPgo8L3N2Zz4=" alt="ETH" style="width: 32px; height: 32px;">
+                        </div>
+                        <select name="from" class="token-select">
+                            <option value="ETH" selected>ETH</option>
+                            <option value="BTC">BTC</option>
+                            <option value="USDT">USDT</option>
+                            <option value="BNB">BNB</option>
+                            <option value="SOL">SOL</option>
+                            <option value="MATIC">MATIC</option>
+                            <option value="AVAX">AVAX</option>
+                        </select>
+                        <svg style="width: 16px; height: 16px; margin-left: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+                <div style="color: #64748b; font-size: 12px; margin-top: 8px;">On Ethereum Mainnet</div>
+            </div>
+
+            <!-- Swap Button -->
+            <div class="swap-button" hx-post="/api/swap-pairs" hx-target="form" hx-swap="outerHTML">
+                <svg style="width: 24px; height: 24px; color: #94a3b8;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                </svg>
+            </div>
+
+            <!-- To Section -->
+            <div class="input-section">
+                <label style="color: #64748b; font-size: 14px; display: block; margin-bottom: 8px;">To</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="number" 
+                           name="toAmount"
+                           placeholder="0"
+                           readonly
+                           style="background: transparent; border: none; color: white; font-size: 32px; font-weight: 600; width: 100%; outline: none;"
+                           id="toAmount">
+                    
+                    <div style="display: flex; align-items: center; background: rgba(51, 65, 85, 0.5); border-radius: 12px; padding: 8px 12px;">
+                        <div class="token-icon" style="background: linear-gradient(135deg, #00FFA3, #DC1FFF);">
+                            <span style="color: white; font-size: 16px;">SOL</span>
+                        </div>
+                        <select name="to" class="token-select">
+                            <option value="SOL" selected>SOL</option>
+                            <option value="ETH">ETH</option>
+                            <option value="BTC">BTC</option>
+                            <option value="USDT">USDT</option>
+                            <option value="BNB">BNB</option>
+                            <option value="MATIC">MATIC</option>
+                            <option value="AVAX">AVAX</option>
+                        </select>
+                        <svg style="width: 16px; height: 16px; margin-left: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+                <div style="color: #64748b; font-size: 12px; margin-top: 8px;">On Solana</div>
+            </div>
+
+            <!-- Wallet Address -->
+            <details style="margin-top: 16px;">
+                <summary style="cursor: pointer; color: #94a3b8; font-size: 14px; margin-bottom: 12px;">
+                    Receiving Wallet Address
+                    <span style="float: right;">+</span>
+                </summary>
+                <input type="text" 
+                       name="wallet"
+                       placeholder="Enter your SOL wallet address"
+                       class="wallet-input"
+                       style="margin-top: 8px;">
+            </details>
+
+            <!-- Rate Info -->
+            <div id="rate-info">
+                <!-- Rate information loads here -->
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="primary-button"
+                    id="swapButton"
+                    disabled>
+                Enter Amount To Preview Swap
+                <span class="spinner" style="margin-left: 8px;"></span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Bottom floating rate ticker -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 12px;">
+        <div id="ticker" 
+             style="display: flex; gap: 24px; overflow-x: auto; color: #94a3b8; font-size: 14px; justify-content: center;"
+             hx-get="/api/ticker" 
+             hx-trigger="load, every 5s">
+            <!-- Live prices load here -->
+        </div>
+    </div>
+
+    <script>
+        function checkAmount() {
+            const amount = document.getElementById('fromAmount').value;
+            const button = document.getElementById('swapButton');
+            
+            if (amount && parseFloat(amount) > 0) {
+                button.disabled = false;
+                button.textContent = 'Preview Swap';
+            } else {
+                button.disabled = true;
+                button.textContent = 'Enter Amount To Preview Swap';
+            }
+        }
+        
+        function toggleSettings() {
+            const settings = document.getElementById('advancedSettings');
+            settings.classList.toggle('open');
+        }
+        
+        // Update token icons when selection changes
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'from' || e.target.name === 'to') {
+                // Here you would update the token icon based on selection
+                // For now, it's a simplified version
+            }
+        });
+    </script>
+</body>
+</html>
