@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"cryptoswap/models"
 	"fmt"
 	"log"
@@ -16,6 +17,14 @@ type Exchange interface {
 	GetQuote(from, to string, amount float64) (*models.Quote, error)
 	GetMinAmount(from, to string) (float64, error)
 	CreateExchange(req models.SwapRequest) (*models.SwapResponse, error)
+}
+
+type ExchangeManager interface {
+	GetName() string
+	GetCurrencies(ctx context.Context) ([]models.Currency, error)
+	GetQuote(ctx context.Context, from, to string, amount float64) (*models.Quote, error)
+	GetMinAmount(ctx context.Context, from, to string) (float64, error)
+	CreateExchange(ctx context.Context, req models.SwapRequest) (*models.SwapResponse, error)
 }
 
 // Aggregator coordina múltiples exchanges
@@ -45,7 +54,7 @@ func (a *Aggregator) AddExchange(exchange Exchange) {
 func (a *Aggregator) GetExchanges() []string {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	
+
 	names := make([]string, len(a.exchanges))
 	for i, ex := range a.exchanges {
 		names[i] = ex.GetName()
@@ -77,7 +86,7 @@ func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
 		wg.Add(1)
 		go func(ex Exchange) {
 			defer wg.Done()
-			
+
 			currencies, err := ex.GetCurrencies()
 			if err != nil {
 				log.Printf("Error getting currencies from %s: %v", ex.GetName(), err)
@@ -87,7 +96,7 @@ func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
 			mapMu.Lock()
 			for _, curr := range currencies {
 				// Si no existe o el nuevo está disponible y el anterior no
-				if existing, exists := currencyMap[curr.Symbol]; !exists || 
+				if existing, exists := currencyMap[curr.Symbol]; !exists ||
 					(!existing.Available && curr.Available) {
 					currencyMap[curr.Symbol] = curr
 				}
@@ -119,7 +128,7 @@ func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
 // GetBestQuote obtiene la mejor cotización de todos los exchanges
 func (a *Aggregator) GetBestQuote(from, to string, amount float64) (*models.Quote, error) {
 	quotes := a.GetAllQuotes(from, to, amount)
-	
+
 	if len(quotes) == 0 {
 		return nil, fmt.Errorf("no quotes available for %s -> %s", from, to)
 	}
@@ -222,7 +231,7 @@ func (a *Aggregator) GetMinAmounts(from, to string) map[string]float64 {
 		wg.Add(1)
 		go func(ex Exchange) {
 			defer wg.Done()
-			
+
 			minAmount, err := ex.GetMinAmount(from, to)
 			if err != nil {
 				log.Printf("Error getting min amount from %s: %v", ex.GetName(), err)

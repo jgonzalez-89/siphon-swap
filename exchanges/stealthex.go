@@ -32,7 +32,7 @@ func (s *StealthEx) GetName() string {
 // GetCurrencies obtiene todas las monedas disponibles
 func (s *StealthEx) GetCurrencies() ([]models.Currency, error) {
 	url := fmt.Sprintf("%s/currency?api_key=%s", s.baseURL, s.apiKey)
-	
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -49,12 +49,12 @@ func (s *StealthEx) GetCurrencies() ([]models.Currency, error) {
 	}
 
 	var apiCurrencies []struct {
-		Symbol       string `json:"symbol"`
-		Name         string `json:"name"`
-		Image        string `json:"image"`
-		Network      string `json:"network"`
-		HasExtraId   bool   `json:"has_extra_id"`
-		IsStable     bool   `json:"is_stable"`
+		Symbol     string `json:"symbol"`
+		Name       string `json:"name"`
+		Image      string `json:"image"`
+		Network    string `json:"network"`
+		HasExtraId bool   `json:"has_extra_id"`
+		IsStable   bool   `json:"is_stable"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiCurrencies); err != nil {
@@ -149,14 +149,14 @@ func (s *StealthEx) GetMinAmount(from, to string) (float64, error) {
 func (s *StealthEx) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
-		"currency_from":   req.From,
-		"currency_to":     req.To,
-		"amount_from":     req.Amount,
-		"address_to":      req.ToAddress,
-		"extra_id_to":     "",
-		"refund_address":  req.RefundAddress,
-		"rate_id":         "",
-		"api_key":         s.apiKey,
+		"currency_from":  req.From,
+		"currency_to":    req.To,
+		"amount_from":    req.Amount,
+		"address_to":     req.ToAddress,
+		"extra_id_to":    "",
+		"refund_address": req.RefundAddress,
+		"rate_id":        "",
+		"api_key":        s.apiKey,
 	}
 
 	jsonBody, err := json.Marshal(exchangeReq)
@@ -180,15 +180,15 @@ func (s *StealthEx) CreateExchange(req models.SwapRequest) (*models.SwapResponse
 	}
 
 	var result struct {
-		Id              string  `json:"id"`
-		AddressFrom     string  `json:"address_from"`
-		AddressTo       string  `json:"address_to"`
-		CurrencyFrom    string  `json:"currency_from"`
-		CurrencyTo      string  `json:"currency_to"`
-		AmountFrom      float64 `json:"amount_from"`
-		AmountTo        float64 `json:"amount_to"`
-		Status          string  `json:"status"`
-		CreatedAt       string  `json:"created_at"`
+		Id           string  `json:"id"`
+		AddressFrom  string  `json:"address_from"`
+		AddressTo    string  `json:"address_to"`
+		CurrencyFrom string  `json:"currency_from"`
+		CurrencyTo   string  `json:"currency_to"`
+		AmountFrom   float64 `json:"amount_from"`
+		AmountTo     float64 `json:"amount_to"`
+		Status       string  `json:"status"`
+		CreatedAt    string  `json:"created_at"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
