@@ -14,13 +14,13 @@ import (
 )
 
 type LetsExchange struct {
-	apiKey   string
-	baseURL  string
-	client   *http.Client
+	apiKey  string
+	baseURL string
+	client  *http.Client
 
 	// cache sencillo de redes por defecto para cada coin (p.ej. USDT -> TRC20)
-	mu           sync.RWMutex
-	defaultNets  map[string]string // CODE -> default_network_code
+	mu          sync.RWMutex
+	defaultNets map[string]string // CODE -> default_network_code
 }
 
 // NewLetsExchange crea el cliente para LetsExchange
@@ -175,7 +175,7 @@ func (l *LetsExchange) GetCurrencies() ([]models.Currency, error) {
 				Image:     c.Icon,
 				Network:   n.Code,
 				Available: available,
-			})
+			}.WithProvider(l.GetName()))
 		}
 	}
 
@@ -216,12 +216,12 @@ func (l *LetsExchange) GetQuote(from, to string, amount float64) (*models.Quote,
 
 	url := l.baseURL + "/v1/info"
 	body := map[string]any{
-		"from":          strings.ToUpper(from),
-		"to":            strings.ToUpper(to),
-		"network_from":  netFrom,
-		"network_to":    netTo,
-		"amount":        amount,
-		"float":         true, // market rate
+		"from":         strings.ToUpper(from),
+		"to":           strings.ToUpper(to),
+		"network_from": netFrom,
+		"network_to":   netTo,
+		"amount":       amount,
+		"float":        true, // market rate
 	}
 	jsonBody, _ := json.Marshal(body)
 
@@ -298,8 +298,8 @@ func (l *LetsExchange) GetMinAmount(from, to string) (float64, error) {
 		"to":           strings.ToUpper(to),
 		"network_from": netFrom,
 		"network_to":   netTo,
-		"amount":       1,     // cualquier valor; el endpoint devuelve min/max igualmente
-		"float":        true,  // market
+		"amount":       1,    // cualquier valor; el endpoint devuelve min/max igualmente
+		"float":        true, // market
 	}
 	jsonBody, _ := json.Marshal(body)
 
@@ -345,16 +345,16 @@ func (l *LetsExchange) CreateExchange(req models.SwapRequest) (*models.SwapRespo
 
 	url := l.baseURL + "/v1/transaction"
 	payload := map[string]any{
-		"float":            true, // market rate
-		"coin_from":        strings.ToUpper(req.From),
-		"coin_to":          strings.ToUpper(req.To),
-		"network_from":     netFrom,
-		"network_to":       netTo,
-		"deposit_amount":   req.Amount,
-		"withdrawal":       req.ToAddress,      // dirección destino
-		"withdrawal_extra_id": "",              // si aplica (XRP/MEMO, etc.)
-		"return":           req.RefundAddress,  // dirección de refund
-		"return_extra_id":  "",
+		"float":               true, // market rate
+		"coin_from":           strings.ToUpper(req.From),
+		"coin_to":             strings.ToUpper(req.To),
+		"network_from":        netFrom,
+		"network_to":          netTo,
+		"deposit_amount":      req.Amount,
+		"withdrawal":          req.ToAddress,     // dirección destino
+		"withdrawal_extra_id": "",                // si aplica (XRP/MEMO, etc.)
+		"return":              req.RefundAddress, // dirección de refund
+		"return_extra_id":     "",
 		// "rate_id": "", // para fixed rate (si antes llamas a /v1/info con float=false)
 		// "affiliate_id": "tuAffiliateIdOpcional",
 	}
@@ -379,20 +379,20 @@ func (l *LetsExchange) CreateExchange(req models.SwapRequest) (*models.SwapRespo
 	}
 
 	var result struct {
-		TransactionID       string  `json:"transaction_id"`
-		Status              string  `json:"status"`
-		CoinFrom            string  `json:"coin_from"`
-		CoinTo              string  `json:"coin_to"`
-		CoinFromNetwork     string  `json:"coin_from_network"`
-		CoinToNetwork       string  `json:"coin_to_network"`
-		DepositAmount       string  `json:"deposit_amount"`
-		WithdrawalAmount    string  `json:"withdrawal_amount"`
-		DepositAddress      string  `json:"deposit"`
-		DepositExtraID      *string `json:"deposit_extra_id"`
-		Withdrawal          string  `json:"withdrawal"`
-		WithdrawalExtraID   string  `json:"withdrawal_extra_id"`
-		Rate                string  `json:"rate"`
-		Fee                 string  `json:"fee"`
+		TransactionID     string  `json:"transaction_id"`
+		Status            string  `json:"status"`
+		CoinFrom          string  `json:"coin_from"`
+		CoinTo            string  `json:"coin_to"`
+		CoinFromNetwork   string  `json:"coin_from_network"`
+		CoinToNetwork     string  `json:"coin_to_network"`
+		DepositAmount     string  `json:"deposit_amount"`
+		WithdrawalAmount  string  `json:"withdrawal_amount"`
+		DepositAddress    string  `json:"deposit"`
+		DepositExtraID    *string `json:"deposit_extra_id"`
+		Withdrawal        string  `json:"withdrawal"`
+		WithdrawalExtraID string  `json:"withdrawal_extra_id"`
+		Rate              string  `json:"rate"`
+		Fee               string  `json:"fee"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)

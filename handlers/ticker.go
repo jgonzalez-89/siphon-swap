@@ -16,6 +16,12 @@ type QuoteRequest struct {
 	Wallet string  `json:"wallet"`
 }
 
+type QuoteResponse struct{}
+
+func A(quoteReq QuoteRequest) (QuoteResponse, error) {
+	return QuoteResponse{}, nil
+}
+
 type TickerHandler struct {
 	CG *services.CoinGeckoService
 }

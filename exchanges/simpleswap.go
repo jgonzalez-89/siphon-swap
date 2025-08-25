@@ -34,7 +34,7 @@ func (s *SimpleSwap) GetName() string {
 // GetCurrencies obtiene todas las monedas disponibles
 func (s *SimpleSwap) GetCurrencies() ([]models.Currency, error) {
 	url := fmt.Sprintf("%s/get_all_currencies?api_key=%s", s.baseURL, s.apiKey)
-	
+
 	resp, err := s.client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching currencies: %w", err)
@@ -64,7 +64,7 @@ func (s *SimpleSwap) GetCurrencies() ([]models.Currency, error) {
 			Image:     curr.Image,
 			Network:   curr.Network,
 			Available: true,
-		})
+		}.WithProvider(s.GetName()))
 	}
 
 	return currencies, nil
@@ -148,14 +148,14 @@ func (s *SimpleSwap) GetMinAmount(from, to string) (float64, error) {
 func (s *SimpleSwap) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
-		"fixed":            false,
-		"currency_from":    req.From,
-		"currency_to":      req.To,
-		"amount":          req.Amount,
-		"address_to":      req.ToAddress,
-		"extra_id_to":     "",
+		"fixed":               false,
+		"currency_from":       req.From,
+		"currency_to":         req.To,
+		"amount":              req.Amount,
+		"address_to":          req.ToAddress,
+		"extra_id_to":         "",
 		"user_refund_address": req.RefundAddress,
-		"api_key":         s.apiKey,
+		"api_key":             s.apiKey,
 	}
 
 	jsonBody, err := json.Marshal(exchangeReq)
@@ -176,14 +176,14 @@ func (s *SimpleSwap) CreateExchange(req models.SwapRequest) (*models.SwapRespons
 	}
 
 	var result struct {
-		Id              string  `json:"id"`
-		AddressFrom     string  `json:"address_from"`
-		AddressTo       string  `json:"address_to"`
-		CurrencyFrom    string  `json:"currency_from"`
-		CurrencyTo      string  `json:"currency_to"`
-		AmountFrom      float64 `json:"amount_from"`
-		AmountTo        float64 `json:"amount_to"`
-		Status          string  `json:"status"`
+		Id           string  `json:"id"`
+		AddressFrom  string  `json:"address_from"`
+		AddressTo    string  `json:"address_to"`
+		CurrencyFrom string  `json:"currency_from"`
+		CurrencyTo   string  `json:"currency_to"`
+		AmountFrom   float64 `json:"amount_from"`
+		AmountTo     float64 `json:"amount_to"`
+		Status       string  `json:"status"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

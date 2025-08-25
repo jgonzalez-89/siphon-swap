@@ -32,7 +32,7 @@ func (c *ChangeNow) GetName() string {
 // GetCurrencies obtiene todas las monedas disponibles
 func (c *ChangeNow) GetCurrencies() ([]models.Currency, error) {
 	url := fmt.Sprintf("%s/currencies?active=true", c.baseURL)
-	
+
 	resp, err := c.client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching currencies: %w", err)
@@ -44,10 +44,10 @@ func (c *ChangeNow) GetCurrencies() ([]models.Currency, error) {
 	}
 
 	var apiCurrencies []struct {
-		Ticker       string `json:"ticker"`
-		Name         string `json:"name"`
-		Image        string `json:"image"`
-		IsAvailable  bool   `json:"isAvailable"`
+		Ticker      string `json:"ticker"`
+		Name        string `json:"name"`
+		Image       string `json:"image"`
+		IsAvailable bool   `json:"isAvailable"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiCurrencies); err != nil {
@@ -62,7 +62,7 @@ func (c *ChangeNow) GetCurrencies() ([]models.Currency, error) {
 				Name:      curr.Name,
 				Image:     curr.Image,
 				Available: true,
-			})
+			}.WithProvider(c.GetName()))
 		}
 	}
 
@@ -89,8 +89,8 @@ func (c *ChangeNow) GetQuote(from, to string, amount float64) (*models.Quote, er
 	}
 
 	var result struct {
-		EstimatedAmount float64 `json:"estimatedAmount"`
-		TransactionSpeed string `json:"transactionSpeedForecast"`
+		EstimatedAmount  float64 `json:"estimatedAmount"`
+		TransactionSpeed string  `json:"transactionSpeedForecast"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -139,12 +139,12 @@ func (c *ChangeNow) GetMinAmount(from, to string) (float64, error) {
 func (c *ChangeNow) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
-		"from":            req.From,
-		"to":              req.To,
-		"address":         req.ToAddress,
-		"amount":          req.Amount,
-		"extraId":         "",
-		"refundAddress":   req.RefundAddress,
+		"from":          req.From,
+		"to":            req.To,
+		"address":       req.ToAddress,
+		"amount":        req.Amount,
+		"extraId":       "",
+		"refundAddress": req.RefundAddress,
 	}
 
 	jsonBody, err := json.Marshal(exchangeReq)
@@ -164,12 +164,12 @@ func (c *ChangeNow) CreateExchange(req models.SwapRequest) (*models.SwapResponse
 	}
 
 	var result struct {
-		Id            string  `json:"id"`
-		PayinAddress  string  `json:"payinAddress"`
-		PayoutAddress string  `json:"payoutAddress"`
-		FromCurrency  string  `json:"fromCurrency"`
-		ToCurrency    string  `json:"toCurrency"`
-		Amount        float64 `json:"amount"`
+		Id             string  `json:"id"`
+		PayinAddress   string  `json:"payinAddress"`
+		PayoutAddress  string  `json:"payoutAddress"`
+		FromCurrency   string  `json:"fromCurrency"`
+		ToCurrency     string  `json:"toCurrency"`
+		Amount         float64 `json:"amount"`
 		ExpectedAmount float64 `json:"expectedAmount"`
 	}
 
