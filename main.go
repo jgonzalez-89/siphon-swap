@@ -102,7 +102,7 @@ func main() {
 	// Health check
 	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(fmt.Sprintf(`{"status":"healthy","exchanges":%d}`, exchangesAdded)))
+		w.Write(fmt.Appendf([]byte{}, `{"status":"healthy","exchanges":%d}`, exchangesAdded))
 	}).Methods("GET")
 
 	// Servir archivos estáticos (frontend)
