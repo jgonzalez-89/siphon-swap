@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"cryptoswap/internal/lib/constants"
 	"fmt"
 	"time"
 
@@ -15,7 +16,7 @@ type formatter struct {
 }
 
 func (f *formatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return fmt.Appendf([]byte{}, "[%s] [%s] [%s] [%s]: %s \n",
+	return fmt.Appendf([]byte{}, "[%s] [%s] [%s] [%s] [%s]: %s \n",
 		entry.Time.Format(time.DateTime), f.level, f.label,
-		f.module, entry.Message), nil
+		f.module, constants.GetRequestId(entry.Context), entry.Message), nil
 }

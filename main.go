@@ -54,11 +54,11 @@ func main() {
 		start := time.Now()
 		popular, others, err := aggregator.GetAllCurrencies()
 		if err != nil {
-			mainLogger.Error(ctx, "❌ Error loading currencies: %v", err)
+			mainLogger.Errorf(ctx, "❌ Error loading currencies: %v", err)
 			return
 		}
 
-		mainLogger.Info(ctx, "✅ Loaded %d currencies in %.2fs",
+		mainLogger.Infof(ctx, "✅ Loaded %d currencies in %.2fs",
 			len(popular)+len(others), time.Since(start).Seconds())
 	}()
 
@@ -76,7 +76,8 @@ func main() {
 	r := mux.NewRouter()
 
 	// Middleware de logging y CORS
-	r.Use(middlewares.LoggingMiddleware(mainLogger))
+	middlewareLogger := factory.NewLogger("logging-middleware")
+	r.Use(middlewares.LoggingMiddleware(middlewareLogger))
 	r.Use(middlewares.CorsMiddleware)
 
 	// API endpoints
@@ -122,16 +123,16 @@ func main() {
 	}
 
 	// Iniciar servidor
-	mainLogger.Info(ctx, "🚀 Server starting on http://localhost:%s", port)
-	mainLogger.Info(ctx, "📝 Endpoints:")
-	mainLogger.Info(ctx, "   - Frontend: http://localhost:%s", port)
-	mainLogger.Info(ctx, "   - API Health: http://localhost:%s/api/health", port)
-	mainLogger.Info(ctx, "   - Ticker: http://localhost:%s/api/ticker", port)
-	mainLogger.Info(ctx, "   - Currencies: http://localhost:%s/api/currencies", port)
-	mainLogger.Info(ctx, "──────────────────────────────────────")
+	mainLogger.Infof(ctx, "🚀 Server starting on http://localhost:%s", port)
+	mainLogger.Infof(ctx, "📝 Endpoints:")
+	mainLogger.Infof(ctx, "   - Frontend: http://localhost:%s", port)
+	mainLogger.Infof(ctx, "   - API Health: http://localhost:%s/api/health", port)
+	mainLogger.Infof(ctx, "   - Ticker: http://localhost:%s/api/ticker", port)
+	mainLogger.Infof(ctx, "   - Currencies: http://localhost:%s/api/currencies", port)
+	mainLogger.Infof(ctx, "──────────────────────────────────────")
 
 	if err := server.ListenAndServe(); err != nil {
-		mainLogger.Fatal(ctx, "❌ Server failed to start: %v", err)
+		mainLogger.Fatalf(ctx, "❌ Server failed to start: %v", err)
 	}
 }
 
