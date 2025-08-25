@@ -23,11 +23,11 @@ func NewQuoteHandler(aggregator *services.Aggregator) *QuoteHandler {
 func (h *QuoteHandler) GetQuote(w http.ResponseWriter, r *http.Request) {
 	// Parsear parámetros del form o query
 	r.ParseForm()
-	
+
 	from := r.FormValue("from")
 	to := r.FormValue("to")
 	amountStr := r.FormValue("amount")
-	
+
 	// Validar parámetros
 	if from == "" || to == "" || amountStr == "" {
 		// Si es HTMX, devolver vacío
@@ -38,7 +38,7 @@ func (h *QuoteHandler) GetQuote(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing parameters", http.StatusBadRequest)
 		return
 	}
-	
+
 	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil || amount <= 0 {
 		if r.Header.Get("HX-Request") == "true" {
@@ -48,10 +48,10 @@ func (h *QuoteHandler) GetQuote(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid amount", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Obtener todas las cotizaciones
 	quotes := h.aggregator.GetAllQuotes(from, to, amount)
-	
+
 	if len(quotes) == 0 {
 		if r.Header.Get("HX-Request") == "true" {
 			h.renderNoQuotes(w)
@@ -60,13 +60,13 @@ func (h *QuoteHandler) GetQuote(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No quotes available", http.StatusNotFound)
 		return
 	}
-	
+
 	// Si es una petición HTMX, devolver HTML
 	if r.Header.Get("HX-Request") == "true" {
-		h.renderHTMLQuotes(w, quotes, from, to)
+		h.renderHTMLQuotes(w, quotes)
 		return
 	}
-	
+
 	// Si no, devolver JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quotes)
@@ -75,29 +75,29 @@ func (h *QuoteHandler) GetQuote(w http.ResponseWriter, r *http.Request) {
 // GetAllQuotes devuelve todas las cotizaciones en JSON
 func (h *QuoteHandler) GetAllQuotes(w http.ResponseWriter, r *http.Request) {
 	var req models.QuoteRequest
-	
+
 	// Decodificar JSON request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Validar
 	if req.From == "" || req.To == "" || req.Amount <= 0 {
 		http.Error(w, "Invalid parameters", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Obtener cotizaciones
 	quotes := h.aggregator.GetAllQuotes(req.From, req.To, req.Amount)
-	
+
 	// Devolver JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quotes)
 }
 
 // renderHTMLQuotes renderiza las cotizaciones como HTML para HTMX
-func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.Quote, from, to string) {
+func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.Quote) {
 	tmpl := `
 	{{if .BestQuote}}
 	<!-- Best Quote Card -->
@@ -118,7 +118,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 				</div>
 			</div>
 			<div style="text-align: right;">
-				<button onclick="selectExchange('{{.BestQuote.Exchange}}')" 
+				<button onclick="selectExchange('{{.BestQuote.Exchange}}')"
 				        style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
 					Use This
 				</button>
@@ -126,14 +126,14 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 		</div>
 	</div>
 	{{end}}
-	
+
 	{{if gt (len .AllQuotes) 1}}
 	<!-- All Exchanges Comparison -->
 	<div style="background: rgba(8, 10, 28, 0.4); border-radius: 12px; padding: 16px;">
 		<div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px;">
 			Compare All Exchanges ({{len .AllQuotes}} available)
 		</div>
-		
+
 		{{range $index, $quote := .AllQuotes}}
 		<div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid {{if eq $quote.Exchange $.BestQuote.Exchange}}rgba(139, 92, 246, 0.3){{else}}rgba(255, 255, 255, 0.05){{end}};"
 		     onclick="selectExchange('{{$quote.Exchange}}')"
@@ -166,7 +166,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 			</div>
 		</div>
 		{{end}}
-		
+
 		<div style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
 			<div style="display: flex; align-items: center; gap: 8px;">
 				<svg style="width: 16px; height: 16px; color: #10b981;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +191,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 		</div>
 	</div>
 	{{end}}
-	
+
 	<script>
 		// Update the "to" amount field
 		document.getElementById('toAmount').value = '{{printf "%.8f" .BestQuote.ToAmount}}';
@@ -205,7 +205,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 			button.textContent = 'Swap via {{.BestQuote.Exchange}}';
 		}
 		button.setAttribute('data-exchange', '{{.BestQuote.Exchange}}');
-		
+
 		// Function to select a specific exchange
 		function selectExchange(exchange) {
 			var button = document.getElementById('swapButton');
@@ -216,7 +216,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 				button.textContent = 'Swap via ' + exchange;
 			}
 			button.setAttribute('data-exchange', exchange);
-			
+
 			// Highlight selected exchange
 			document.querySelectorAll('[onclick*="selectExchange"]').forEach(el => {
 				el.style.borderColor = 'rgba(255, 255, 255, 0.05)';
@@ -224,7 +224,7 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 			event.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)';
 		}
 	</script>`
-	
+
 	// Create template with helper functions
 	funcMap := template.FuncMap{
 		"Difference": func(a, b float64) float64 {
@@ -245,13 +245,13 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 			return ((best - worst) / worst) * 100
 		},
 	}
-	
+
 	t, err := template.New("quotes").Funcs(funcMap).Parse(tmpl)
 	if err != nil {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	data := struct {
 		BestQuote *models.Quote
 		AllQuotes []*models.Quote
@@ -259,14 +259,14 @@ func (h *QuoteHandler) renderHTMLQuotes(w http.ResponseWriter, quotes []*models.
 		BestQuote: quotes[0],
 		AllQuotes: quotes,
 	}
-	
+
 	t.Execute(w, data)
 }
 
 // renderNoQuotes renderiza mensaje cuando no hay cotizaciones
 func (h *QuoteHandler) renderNoQuotes(w http.ResponseWriter) {
 	html := `
-	<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); 
+	<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
 	            border-radius: 12px; padding: 12px; color: #f87171;">
 		<div style="font-weight: 600; margin-bottom: 4px;">No quotes available</div>
 		<div style="font-size: 14px; color: #fca5a5;">
@@ -278,7 +278,7 @@ func (h *QuoteHandler) renderNoQuotes(w http.ResponseWriter) {
 		document.getElementById('swapButton').disabled = true;
 		document.getElementById('swapButton').textContent = 'No quotes available';
 	</script>`
-	
+
 	w.Write([]byte(html))
 }
 
@@ -286,14 +286,14 @@ func (h *QuoteHandler) renderNoQuotes(w http.ResponseWriter) {
 func (h *QuoteHandler) GetMinAmounts(w http.ResponseWriter, r *http.Request) {
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
-	
+
 	if from == "" || to == "" {
 		http.Error(w, "Missing parameters", http.StatusBadRequest)
 		return
 	}
-	
+
 	minAmounts := h.aggregator.GetMinAmounts(from, to)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(minAmounts)
 }

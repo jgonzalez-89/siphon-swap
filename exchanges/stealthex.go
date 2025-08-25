@@ -70,7 +70,7 @@ func (s *StealthEx) GetCurrencies() ([]models.Currency, error) {
 			Image:     curr.Image,
 			Network:   curr.Network,
 			Available: true,
-		})
+		}.WithProvider(s.GetName()))
 	}
 
 	return currencies, nil

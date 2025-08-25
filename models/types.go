@@ -1,6 +1,14 @@
 package models
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+type CurrencyKey struct {
+	Symbol  string
+	Network string
+}
 
 // Currency representa una moneda disponible
 type Currency struct {
@@ -9,6 +17,27 @@ type Currency struct {
 	Image     string `json:"image,omitempty"`
 	Network   string `json:"network,omitempty"`
 	Available bool   `json:"available"`
+	provider  string
+}
+
+func (c Currency) WithProvider(provider string) Currency {
+	c.provider = provider
+	return c
+}
+
+func (c *Currency) GetKey() CurrencyKey {
+	return CurrencyKey{
+		Symbol:  c.Symbol,
+		Network: c.Network,
+	}
+}
+
+func (c *Currency) GetLowerSymbol() string {
+	return strings.ToLower(c.Symbol)
+}
+
+func (c *Currency) GetUpperSymbol() string {
+	return strings.ToUpper(c.Symbol)
 }
 
 // Quote representa una cotización de un exchange
@@ -45,8 +74,8 @@ type SwapRequest struct {
 type SwapResponse struct {
 	ID            string    `json:"id"`
 	Status        string    `json:"status"`
-	From          string    `json:"from"`        // AÑADIDO
-	To            string    `json:"to"`          // AÑADIDO
+	From          string    `json:"from"` // AÑADIDO
+	To            string    `json:"to"`   // AÑADIDO
 	PayinAddress  string    `json:"payin_address"`
 	PayinAmount   float64   `json:"payin_amount"`
 	PayoutAmount  float64   `json:"payout_amount"`

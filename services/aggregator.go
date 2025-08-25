@@ -8,6 +8,24 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/icamacho1/Primitives/pkg/maps"
+)
+
+const (
+	restCurrenciesCache    = "rest_currencies"
+	popularCurrenciesCache = "popular_currencies"
+)
+
+var DefaultCacheDuration = 5 * time.Minute
+
+var (
+	popularSymbolLookup = map[string]bool{
+		"btc": true, "eth": true, "usdt": true, "usdc": true,
+		"bnb": true, "sol": true, "ada": true, "dot": true,
+		"matic": true, "avax": true, "link": true, "uni": true,
+		"xrp": true, "ltc": true, "atom": true, "near": true,
+	}
 )
 
 // Exchange es la interfaz que deben implementar todos los exchanges
@@ -62,26 +80,39 @@ func (a *Aggregator) GetExchanges() []string {
 	return names
 }
 
+func (a *Aggregator) getCurrenciesFromCache() ([]models.Currency,
+	[]models.Currency, bool) {
+	popular, ok := a.cache.Get(popularCurrenciesCache)
+	if !ok {
+		return nil, nil, false
+	}
+
+	others, ok := a.cache.Get(restCurrenciesCache)
+	if !ok {
+		return nil, nil, false
+	}
+
+	return popular.([]models.Currency), others.([]models.Currency), true
+}
+
 // GetAllCurrencies obtiene todas las monedas únicas de todos los exchanges
-func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
-	// Verificar cache
-	cacheKey := "all_currencies"
-	if cached := a.cache.Get(cacheKey); cached != nil {
-		if currencies, ok := cached.([]models.Currency); ok {
-			return currencies, nil
-		}
+func (a *Aggregator) GetAllCurrencies() (popular []models.Currency,
+	others []models.Currency, err error) {
+
+	if popular, others, ok := a.getCurrenciesFromCache(); ok {
+		return popular, others, nil
 	}
 
 	a.mu.RLock()
 	exchanges := a.exchanges
 	a.mu.RUnlock()
 
-	// Map para eliminar duplicados
-	currencyMap := make(map[string]models.Currency)
 	var wg sync.WaitGroup
 	var mapMu sync.Mutex
 
 	// Obtener currencies de cada exchange en paralelo
+	popularCurrenciesLookup := maps.New[models.CurrencyKey, models.Currency]()
+	restCurrenciesLookup := maps.New[models.CurrencyKey, models.Currency]()
 	for _, exchange := range exchanges {
 		wg.Add(1)
 		go func(ex Exchange) {
@@ -95,11 +126,11 @@ func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
 
 			mapMu.Lock()
 			for _, curr := range currencies {
-				// Si no existe o el nuevo está disponible y el anterior no
-				if existing, exists := currencyMap[curr.Symbol]; !exists ||
-					(!existing.Available && curr.Available) {
-					currencyMap[curr.Symbol] = curr
+				if _, ok := popularSymbolLookup[curr.GetLowerSymbol()]; ok {
+					popularCurrenciesLookup.Add(curr.GetKey(), curr)
+					continue
 				}
+				restCurrenciesLookup.Add(curr.GetKey(), curr)
 			}
 			mapMu.Unlock()
 		}(exchange)
@@ -107,22 +138,23 @@ func (a *Aggregator) GetAllCurrencies() ([]models.Currency, error) {
 
 	wg.Wait()
 
-	// Convertir map a slice
-	currencies := make([]models.Currency, 0, len(currencyMap))
-	for _, curr := range currencyMap {
-		currencies = append(currencies, curr)
-	}
+	a.sortCurrenciesAndSetToCache(popularCurrenciesLookup, popularCurrenciesCache)
+	a.sortCurrenciesAndSetToCache(restCurrenciesLookup, restCurrenciesCache)
 
-	// Ordenar alfabéticamente
+	log.Printf("Loaded %d unique currencies from %d exchanges",
+		len(popularCurrenciesLookup)+len(restCurrenciesLookup), len(exchanges))
+	return popularCurrenciesLookup.Values(), restCurrenciesLookup.Values(), nil
+}
+
+func (a *Aggregator) sortCurrenciesAndSetToCache(
+	lookup maps.Map[models.CurrencyKey, models.Currency], cacheKey string) {
+
+	currencies := lookup.Values()
 	sort.Slice(currencies, func(i, j int) bool {
 		return currencies[i].Symbol < currencies[j].Symbol
 	})
 
-	// Guardar en cache
-	a.cache.Set(cacheKey, currencies, 5*time.Minute)
-
-	log.Printf("Loaded %d unique currencies from %d exchanges", len(currencies), len(exchanges))
-	return currencies, nil
+	a.cache.Set(cacheKey, currencies, DefaultCacheDuration)
 }
 
 // GetBestQuote obtiene la mejor cotización de todos los exchanges
@@ -141,10 +173,8 @@ func (a *Aggregator) GetBestQuote(from, to string, amount float64) (*models.Quot
 func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quote {
 	// Cache key para este par y cantidad
 	cacheKey := fmt.Sprintf("quotes_%s_%s_%.8f", from, to, amount)
-	if cached := a.cache.Get(cacheKey); cached != nil {
-		if quotes, ok := cached.([]*models.Quote); ok {
-			return quotes
-		}
+	if cached, ok := a.cache.Get(cacheKey); ok {
+		return cached.([]*models.Quote)
 	}
 
 	a.mu.RLock()

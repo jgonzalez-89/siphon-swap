@@ -7,7 +7,7 @@ import (
 
 // CacheItem representa un elemento en cache
 type CacheItem struct {
-	Value      interface{}
+	Value      any
 	Expiration time.Time
 }
 
@@ -24,10 +24,10 @@ func NewCache(defaultTTL time.Duration) *Cache {
 		items: make(map[string]CacheItem),
 		ttl:   defaultTTL,
 	}
-	
+
 	// Limpieza periódica de elementos expirados
 	go cache.cleanup()
-	
+
 	return cache
 }
 
@@ -35,7 +35,7 @@ func NewCache(defaultTTL time.Duration) *Cache {
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	expiration := time.Now().Add(ttl)
 	c.items[key] = CacheItem{
 		Value:      value,
@@ -44,21 +44,21 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 }
 
 // Get obtiene un valor del cache
-func (c *Cache) Get(key string) interface{} {
+func (c *Cache) Get(key string) (any, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	item, exists := c.items[key]
 	if !exists {
-		return nil
+		return item, false
 	}
-	
+
 	// Verificar si expiró
 	if time.Now().After(item.Expiration) {
-		return nil
+		return item.Value, false
 	}
-	
-	return item.Value
+
+	return item.Value, true
 }
 
 // Delete elimina un elemento del cache
@@ -79,7 +79,7 @@ func (c *Cache) Clear() {
 func (c *Cache) cleanup() {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		c.mu.Lock()
 		now := time.Now()
