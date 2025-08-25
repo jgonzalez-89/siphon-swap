@@ -9,19 +9,6 @@ import (
 	"cryptoswap/services"
 )
 
-type QuoteRequest struct {
-	From   string  `json:"from"`
-	To     string  `json:"to"`
-	Amount float64 `json:"amount"`
-	Wallet string  `json:"wallet"`
-}
-
-type QuoteResponse struct{}
-
-func A(quoteReq QuoteRequest) (QuoteResponse, error) {
-	return QuoteResponse{}, nil
-}
-
 type TickerHandler struct {
 	CG *services.CoinGeckoService
 }
