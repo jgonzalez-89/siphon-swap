@@ -6,15 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 )
-
-type HttpConfig struct {
-	BaseURL string
-	Timeout time.Duration
-}
 
 type httpClient struct {
 	req    *resty.Request

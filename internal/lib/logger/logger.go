@@ -8,6 +8,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	DebugLevel   = logrus.DebugLevel
+	WarningLevel = logrus.WarnLevel
+	ErrorLevel   = logrus.ErrorLevel
+	FatalLevel   = logrus.FatalLevel
+	InfoLevel    = logrus.InfoLevel
+)
+
 type Logger interface {
 	Debug(ctx context.Context, args ...any)
 	Debugf(ctx context.Context, format string, args ...any)

@@ -6,12 +6,19 @@ import (
 )
 
 type CurrencyResponse struct {
-	Symbol     string `json:"symbol"`
-	Name       string `json:"name"`
-	Image      string `json:"image"`
-	Network    string `json:"network"`
-	HasExtraId bool   `json:"has_extra_id"`
-	IsStable   bool   `json:"is_stable"`
+	Symbol            string   `json:"symbol"`
+	Name              string   `json:"name"`
+	Image             string   `json:"image"`
+	Network           string   `json:"network"`
+	HasExtraId        bool     `json:"has_extra_id"`
+	IsStable          bool     `json:"is_stable"`
+	ValidationAddress string   `json:"validation_address"`
+	ValidationExtra   string   `json:"validation_extra"`
+	WarningsFrom      []string `json:"warnings_from"`
+	WarningsTo        []string `json:"warnings_to"`
+	AddressExplorer   string   `json:"address_explorer"`
+	TxExplorer        string   `json:"tx_explorer"`
+	ExtraId           string   `json:"extra_id"`
 }
 
 func (c *CurrencyResponse) ToCurrency() models.Currency {
@@ -77,17 +84,16 @@ type ExchangePayload struct {
 }
 
 type ExchangeResponse struct {
-	Id          string  `json:"id"`
-	Status      string  `json:"status"`
-	CreatedAt   string  `json:"created_at"`
-	AddressFrom string  `json:"address_from"`
-	AmountFrom  float64 `json:"amount_from"`
-	AmountTo    float64 `json:"amount_to"`
+	Id          string    `json:"id"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	AddressFrom string    `json:"address_from"`
+	AmountFrom  float64   `json:"amount_from"`
+	AmountTo    float64   `json:"amount_to"`
 	Exchange
 }
 
 func (e *ExchangeResponse) ToSwapResponse(from, to string) *models.SwapResponse {
-	createdAt, _ := time.Parse(time.RFC3339, e.CreatedAt)
 	return &models.SwapResponse{
 		ID:            e.Id,
 		Status:        e.Status,
@@ -98,5 +104,4 @@ func (e *ExchangeResponse) ToSwapResponse(from, to string) *models.SwapResponse 
 		PayoutAmount:  e.AmountTo,
 		PayoutAddress: e.AddressTo,
 	}
-}
 }

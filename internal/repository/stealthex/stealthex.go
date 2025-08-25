@@ -19,7 +19,6 @@ const (
 type stealthexClientImpl struct {
 	factory httpclient.Factory
 	logger  logger.Logger
-	apiKey  string
 }
 
 func NewStealthClient(logger logger.Logger,
@@ -36,7 +35,7 @@ func (s *stealthexClientImpl) GetName() string {
 
 func (s *stealthexClientImpl) GetCurrencies(ctx context.Context,
 ) ([]models.Currency, error) {
-	request := s.factory.NewClient(ctx).WithAuthHeader(s.apiKey).Get
+	request := s.factory.NewClient(ctx).Get
 	apiCurrencies, err := httpclient.HandleRequest[[]CurrencyResponse](
 		request, "/currency", http.StatusOK)
 	if err != nil {
@@ -48,17 +47,15 @@ func (s *stealthexClientImpl) GetCurrencies(ctx context.Context,
 	}), nil
 }
 
-// GetQuote obtiene una cotización
 func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to string,
 	amount float64) (*models.Quote, error) {
 
 	request := s.factory.NewClient(ctx).
-		WithAuthHeader(s.apiKey).
 		WithQueryParams("amount", amount).
 		WithQueryParams("fixed", false).
 		Get
 	quote, err := httpclient.HandleRequest[QuoteResponse](
-		request, "/estimate/"+from+"/"+to, http.StatusOK)
+		request, fmt.Sprintf("/estimate/%s/%s", from, to), http.StatusOK)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching quote: %w", err)
 	}
@@ -68,9 +65,9 @@ func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to string,
 
 // GetMinAmount obtiene el monto mínimo para un par
 func (s *stealthexClientImpl) GetMinAmount(ctx context.Context, from, to string) (float64, error) {
-	request := s.factory.NewClient(ctx).WithAuthHeader(s.apiKey).Get
+	request := s.factory.NewClient(ctx).Get
 	minAmount, err := httpclient.HandleRequest[MinAmountResponse](
-		request, "/range/"+from+"/"+to, http.StatusOK)
+		request, fmt.Sprintf("/range/%s/%s", from, to), http.StatusOK)
 	if err != nil {
 		return 0, err
 	}
@@ -83,7 +80,6 @@ func (s *stealthexClientImpl) CreateExchange(ctx context.Context,
 	req models.SwapRequest) (*models.SwapResponse, error) {
 
 	request := s.factory.NewClient(ctx).
-		WithAuthHeader(s.apiKey).
 		WithBody(NewExchangePayload(req)).
 		Post
 
@@ -98,10 +94,9 @@ func (s *stealthexClientImpl) CreateExchange(ctx context.Context,
 
 // GetExchangeStatus obtiene el estado de un intercambio
 func (s *stealthexClientImpl) GetExchangeStatus(ctx context.Context, id string) (string, error) {
-	request := s.factory.NewClient(ctx).
-		WithAuthHeader(s.apiKey).Get
+	request := s.factory.NewClient(ctx).Get
 	exchange, err := httpclient.HandleRequest[ExchangeResponse](
-		request, "/exchange/"+id, http.StatusOK)
+		request, fmt.Sprintf("/exchange/%s", id), http.StatusOK)
 	if err != nil {
 		return "", err
 	}

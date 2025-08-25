@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -94,12 +95,7 @@ func (s *StealthEx) GetQuote(from, to string, amount float64) (*models.Quote, er
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
-	var result struct {
-		EstimatedAmount float64 `json:"estimated_amount"`
-		Min             float64 `json:"min_amount"`
-		Max             float64 `json:"max_amount"`
-	}
-
+	var result rTMP
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
@@ -120,6 +116,30 @@ func (s *StealthEx) GetQuote(from, to string, amount float64) (*models.Quote, er
 		MaxAmount:  result.Max,
 		Timestamp:  time.Now(),
 	}, nil
+}
+
+type rTMP struct {
+	EstimatedAmount float64 `json:"estimated_amount"`
+	Min             float64 `json:"min_amount"`
+	Max             float64 `json:"max_amount"`
+}
+
+func (r *rTMP) UnmarshalJSON(data []byte) error {
+	var tmp struct {
+		EstimatedAmount string  `json:"estimated_amount"`
+		Min             float64 `json:"min_amount"`
+		Max             float64 `json:"max_amount"`
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	tme, _ := strconv.ParseFloat(tmp.EstimatedAmount, 64)
+	r.EstimatedAmount = tme
+	r.Min = tmp.Min
+	r.Max = tmp.Max
+
+	return nil
 }
 
 // GetMinAmount obtiene el monto mínimo para un par
