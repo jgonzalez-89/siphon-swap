@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"cryptoswap/internal/lib/constants"
 	"cryptoswap/internal/lib/logger"
 	"net/http"
 	"strings"
@@ -13,7 +14,8 @@ import (
 func LoggingMiddleware(logger logger.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
+			ctx := constants.NewContextWithRequestId()
+			r = r.WithContext(ctx)
 			startTime := time.Now()
 
 			// Create a custom response writer to capture status code and response size
