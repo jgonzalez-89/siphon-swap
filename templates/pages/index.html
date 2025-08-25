@@ -1,0 +1,16 @@
+{{define "index"}}
+{{template "base" .}}
+{{end}}
+
+{{define "content"}}
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 24px;">
+    {{template "stats_row" .}}
+    
+    <!-- Swap Container -->
+    <div style="display: flex; justify-content: center;" id="swap">
+        {{template "swap_form" .}}
+    </div>
+    
+    {{template "features" .}}
+</div>
+{{end}}
