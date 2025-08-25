@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -32,7 +33,7 @@ func (s *StealthEx) GetName() string {
 // GetCurrencies obtiene todas las monedas disponibles
 func (s *StealthEx) GetCurrencies() ([]models.Currency, error) {
 	url := fmt.Sprintf("%s/currency?api_key=%s", s.baseURL, s.apiKey)
-	
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -49,12 +50,12 @@ func (s *StealthEx) GetCurrencies() ([]models.Currency, error) {
 	}
 
 	var apiCurrencies []struct {
-		Symbol       string `json:"symbol"`
-		Name         string `json:"name"`
-		Image        string `json:"image"`
-		Network      string `json:"network"`
-		HasExtraId   bool   `json:"has_extra_id"`
-		IsStable     bool   `json:"is_stable"`
+		Symbol     string `json:"symbol"`
+		Name       string `json:"name"`
+		Image      string `json:"image"`
+		Network    string `json:"network"`
+		HasExtraId bool   `json:"has_extra_id"`
+		IsStable   bool   `json:"is_stable"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiCurrencies); err != nil {
@@ -94,12 +95,7 @@ func (s *StealthEx) GetQuote(from, to string, amount float64) (*models.Quote, er
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
-	var result struct {
-		EstimatedAmount float64 `json:"estimated_amount"`
-		Min             float64 `json:"min_amount"`
-		Max             float64 `json:"max_amount"`
-	}
-
+	var result rTMP
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
@@ -120,6 +116,30 @@ func (s *StealthEx) GetQuote(from, to string, amount float64) (*models.Quote, er
 		MaxAmount:  result.Max,
 		Timestamp:  time.Now(),
 	}, nil
+}
+
+type rTMP struct {
+	EstimatedAmount float64 `json:"estimated_amount"`
+	Min             float64 `json:"min_amount"`
+	Max             float64 `json:"max_amount"`
+}
+
+func (r *rTMP) UnmarshalJSON(data []byte) error {
+	var tmp struct {
+		EstimatedAmount string  `json:"estimated_amount"`
+		Min             float64 `json:"min_amount"`
+		Max             float64 `json:"max_amount"`
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	tme, _ := strconv.ParseFloat(tmp.EstimatedAmount, 64)
+	r.EstimatedAmount = tme
+	r.Min = tmp.Min
+	r.Max = tmp.Max
+
+	return nil
 }
 
 // GetMinAmount obtiene el monto mínimo para un par
@@ -149,14 +169,14 @@ func (s *StealthEx) GetMinAmount(from, to string) (float64, error) {
 func (s *StealthEx) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
-		"currency_from":   req.From,
-		"currency_to":     req.To,
-		"amount_from":     req.Amount,
-		"address_to":      req.ToAddress,
-		"extra_id_to":     "",
-		"refund_address":  req.RefundAddress,
-		"rate_id":         "",
-		"api_key":         s.apiKey,
+		"currency_from":  req.From,
+		"currency_to":    req.To,
+		"amount_from":    req.Amount,
+		"address_to":     req.ToAddress,
+		"extra_id_to":    "",
+		"refund_address": req.RefundAddress,
+		"rate_id":        "",
+		"api_key":        s.apiKey,
 	}
 
 	jsonBody, err := json.Marshal(exchangeReq)
@@ -180,15 +200,15 @@ func (s *StealthEx) CreateExchange(req models.SwapRequest) (*models.SwapResponse
 	}
 
 	var result struct {
-		Id              string  `json:"id"`
-		AddressFrom     string  `json:"address_from"`
-		AddressTo       string  `json:"address_to"`
-		CurrencyFrom    string  `json:"currency_from"`
-		CurrencyTo      string  `json:"currency_to"`
-		AmountFrom      float64 `json:"amount_from"`
-		AmountTo        float64 `json:"amount_to"`
-		Status          string  `json:"status"`
-		CreatedAt       string  `json:"created_at"`
+		Id           string  `json:"id"`
+		AddressFrom  string  `json:"address_from"`
+		AddressTo    string  `json:"address_to"`
+		CurrencyFrom string  `json:"currency_from"`
+		CurrencyTo   string  `json:"currency_to"`
+		AmountFrom   float64 `json:"amount_from"`
+		AmountTo     float64 `json:"amount_to"`
+		Status       string  `json:"status"`
+		CreatedAt    string  `json:"created_at"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
