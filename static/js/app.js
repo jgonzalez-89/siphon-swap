@@ -59,7 +59,6 @@ class SwapManager {
 
     loadCurrencies() {
         console.log('Loading currencies...');
-        
         // Check if we're using templates or static HTML
         const fromSelect = document.getElementById('fromSelect');
         const toSelect = document.getElementById('toSelect');
