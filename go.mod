@@ -1,8 +1,7 @@
 module cryptoswap
 
-go 1.23.0
+go 1.23.9
 
-toolchain go1.24.1
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
