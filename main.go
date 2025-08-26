@@ -4,8 +4,10 @@ import (
 	"context"
 	"cryptoswap/exchanges"
 	viewHandlers "cryptoswap/handlers/views"
+	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
 	"cryptoswap/internal/lib/middlewares"
+	"cryptoswap/internal/repository/coingecko"
 	"cryptoswap/internal/services/swap"
 	apiHandlers "cryptoswap/internal/transport/handlers"
 	"fmt"
@@ -81,9 +83,12 @@ func main() {
 	}()
 
 	// CoinGecko service
-	cgKey := os.Getenv("COINGECKO_API_KEY")
-	cgBase := os.Getenv("COINGECKO_BASE_URL")
-	coinGecko := swap.NewCoinGeckoService(cgBase, cgKey)
+	cgKey := getEnv("COINGECKO_API_KEY", "")
+	cgBase := getEnv("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3")
+	cgHttpFactory := httpclient.NewFactory(httpclient.NewConfigWithAuthHeader(cgBase, cgKey,
+		"x-cg-demo-api-key", 10*time.Second), factory.NewLogger("coingecko"))
+	coinGecko := swap.NewCoinGeckoService(factory.NewLogger("coingecko"),
+		coingecko.NewCoinGecko(factory.NewLogger("coingecko"), cgHttpFactory))
 
 	// ========================================
 	// NUEVOS HANDLERS - API (JSON)
@@ -237,4 +242,12 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "❌ Server failed to start: %v", err)
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
