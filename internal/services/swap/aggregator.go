@@ -1,9 +1,11 @@
 // services/aggregator.go
-package services
+package swap
 
 import (
 	"context"
-	"cryptoswap/models"
+	"cryptoswap/internal/lib/cache"
+	"cryptoswap/internal/lib/logger"
+	"cryptoswap/internal/services/models"
 	"fmt"
 	"log"
 	"sort"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/icamacho1/Primitives/pkg/maps"
+	"github.com/samber/lo"
 )
 
 const (
@@ -48,16 +51,18 @@ type ExchangeManager interface {
 
 // Aggregator coordina múltiples exchanges
 type Aggregator struct {
-	exchanges []Exchange
-	cache     *Cache
+	logger    logger.Logger
+	exchanges map[string]Exchange
+	cache     *cache.Cache
 	mu        sync.RWMutex
 }
 
 // NewAggregator crea una nueva instancia del agregador
-func NewAggregator() *Aggregator {
+func NewAggregator(logger logger.Logger) *Aggregator {
 	return &Aggregator{
-		exchanges: make([]Exchange, 0),
-		cache:     NewCache(5 * time.Minute), // Cache de 5 minutos
+		logger:    logger,
+		exchanges: make(map[string]Exchange),
+		cache:     cache.NewCache(5 * time.Minute), // Cache de 5 minutos
 	}
 }
 
@@ -65,23 +70,19 @@ func NewAggregator() *Aggregator {
 func (a *Aggregator) AddExchange(exchange Exchange) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.exchanges = append(a.exchanges, exchange)
-	log.Printf("Added exchange: %s", exchange.GetName())
+	if _, ok := a.exchanges[exchange.GetName()]; !ok {
+		a.exchanges[exchange.GetName()] = exchange
+	}
 }
 
 // GetExchanges retorna la lista de exchanges
-func (a *Aggregator) GetExchanges() []string {
+func (a *Aggregator) GetExchanges(ctx context.Context) []string {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-
-	names := make([]string, len(a.exchanges))
-	for i, ex := range a.exchanges {
-		names[i] = ex.GetName()
-	}
-	return names
+	return lo.Keys(a.exchanges)
 }
 
-func (a *Aggregator) getCurrenciesFromCache() ([]models.Currency,
+func (a *Aggregator) getCurrenciesFromCache(ctx context.Context) ([]models.Currency,
 	[]models.Currency, bool) {
 	popular, ok := a.cache.Get(popularCurrenciesCache)
 	if !ok {
@@ -93,14 +94,16 @@ func (a *Aggregator) getCurrenciesFromCache() ([]models.Currency,
 		return nil, nil, false
 	}
 
+	a.logger.Infof(ctx, "Loaded %d popular currencies and %d rest currencies from cache",
+		len(popular.([]models.Currency)), len(others.([]models.Currency)))
 	return popular.([]models.Currency), others.([]models.Currency), true
 }
 
 // GetAllCurrencies obtiene todas las monedas únicas de todos los exchanges
-func (a *Aggregator) GetAllCurrencies() (popular []models.Currency,
+func (a *Aggregator) GetAllCurrencies(ctx context.Context) (popular []models.Currency,
 	others []models.Currency, err error) {
 
-	if popular, others, ok := a.getCurrenciesFromCache(); ok {
+	if popular, others, ok := a.getCurrenciesFromCache(ctx); ok {
 		return popular, others, nil
 	}
 
@@ -121,7 +124,7 @@ func (a *Aggregator) GetAllCurrencies() (popular []models.Currency,
 
 			currencies, err := ex.GetCurrencies()
 			if err != nil {
-				log.Printf("Error getting currencies from %s: %v", ex.GetName(), err)
+				a.logger.Errorf(ctx, "Error getting currencies from %s: %v", ex.GetName(), err)
 				return
 			}
 
@@ -142,7 +145,7 @@ func (a *Aggregator) GetAllCurrencies() (popular []models.Currency,
 	a.sortCurrenciesAndSetToCache(popularCurrenciesLookup, popularCurrenciesCache)
 	a.sortCurrenciesAndSetToCache(restCurrenciesLookup, restCurrenciesCache)
 
-	log.Printf("Loaded %d unique currencies from %d exchanges",
+	a.logger.Infof(ctx, "Loaded %d unique currencies from %d exchanges",
 		len(popularCurrenciesLookup)+len(restCurrenciesLookup), len(exchanges))
 	return popularCurrenciesLookup.Values(), restCurrenciesLookup.Values(), nil
 }
@@ -159,10 +162,11 @@ func (a *Aggregator) sortCurrenciesAndSetToCache(
 }
 
 // GetBestQuote obtiene la mejor cotización de todos los exchanges
-func (a *Aggregator) GetBestQuote(from, to string, amount float64) (*models.Quote, error) {
-	quotes := a.GetAllQuotes(from, to, amount)
+func (a *Aggregator) GetBestQuote(ctx context.Context, from, to string, amount float64) (*models.Quote, error) {
+	quotes := a.GetAllQuotes(ctx, from, to, amount)
 
 	if len(quotes) == 0 {
+		a.logger.Errorf(ctx, "no quotes available for %s -> %s", from, to)
 		return nil, fmt.Errorf("no quotes available for %s -> %s", from, to)
 	}
 
@@ -171,7 +175,12 @@ func (a *Aggregator) GetBestQuote(from, to string, amount float64) (*models.Quot
 }
 
 // GetAllQuotes obtiene cotizaciones de todos los exchanges
-func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quote {
+func (a *Aggregator) GetAllQuotes(ctx context.Context, from, to string, amount float64) []*models.Quote {
+	// No need to compute shit
+	if from == to {
+		return []*models.Quote{}
+	}
+
 	// Cache key para este par y cantidad
 	cacheKey := fmt.Sprintf("quotes_%s_%s_%.8f", from, to, amount)
 	if cached, ok := a.cache.Get(cacheKey); ok {
@@ -186,10 +195,6 @@ func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quo
 	var wg sync.WaitGroup
 	var quotesMu sync.Mutex
 
-	// Canal para timeout
-	timeout := time.After(10 * time.Second)
-	done := make(chan bool)
-
 	// Obtener quotes de cada exchange en paralelo
 	for _, exchange := range exchanges {
 		wg.Add(1)
@@ -201,7 +206,7 @@ func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quo
 			go func() {
 				quote, err := ex.GetQuote(from, to, amount)
 				if err != nil {
-					log.Printf("Error getting quote from %s: %v", ex.GetName(), err)
+					a.logger.Errorf(ctx, "Error getting quote from %s: %v", ex.GetName(), err)
 					quoteChan <- nil
 					return
 				}
@@ -216,23 +221,11 @@ func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quo
 					quotesMu.Unlock()
 				}
 			case <-time.After(5 * time.Second):
-				log.Printf("Timeout getting quote from %s", ex.GetName())
+				a.logger.Errorf(ctx, "Timeout getting quote from %s", ex.GetName())
 			}
 		}(exchange)
 	}
-
-	// Esperar a que terminen todos o timeout global
-	go func() {
-		wg.Wait()
-		done <- true
-	}()
-
-	select {
-	case <-done:
-		// Todos terminaron
-	case <-timeout:
-		log.Println("Global timeout reached for quotes")
-	}
+	wg.Wait()
 
 	// Ordenar por mejor precio (mayor ToAmount)
 	sort.Slice(quotes, func(i, j int) bool {
@@ -244,12 +237,12 @@ func (a *Aggregator) GetAllQuotes(from, to string, amount float64) []*models.Quo
 		a.cache.Set(cacheKey, quotes, 30*time.Second)
 	}
 
-	log.Printf("Got %d quotes for %s -> %s", len(quotes), from, to)
+	a.logger.Infof(ctx, "Got %d quotes for %s -> %s", len(quotes), from, to)
 	return quotes
 }
 
 // GetMinAmounts obtiene los montos mínimos de todos los exchanges
-func (a *Aggregator) GetMinAmounts(from, to string) map[string]float64 {
+func (a *Aggregator) GetMinAmounts(ctx context.Context, from, to string) map[string]float64 {
 	a.mu.RLock()
 	exchanges := a.exchanges
 	a.mu.RUnlock()
@@ -265,7 +258,7 @@ func (a *Aggregator) GetMinAmounts(from, to string) map[string]float64 {
 
 			minAmount, err := ex.GetMinAmount(from, to)
 			if err != nil {
-				log.Printf("Error getting min amount from %s: %v", ex.GetName(), err)
+				a.logger.Errorf(ctx, "Error getting min amount from %s: %v", ex.GetName(), err)
 				return
 			}
 

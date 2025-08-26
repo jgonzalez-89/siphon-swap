@@ -4,8 +4,8 @@ import (
 	"context"
 	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
-	"cryptoswap/models"
-	"cryptoswap/services"
+	"cryptoswap/internal/services/models"
+	"cryptoswap/internal/services/swap"
 	"fmt"
 	"net/http"
 
@@ -22,7 +22,7 @@ type stealthexClientImpl struct {
 }
 
 func NewStealthClient(logger logger.Logger,
-	factory httpclient.Factory) services.ExchangeManager {
+	factory httpclient.Factory) swap.ExchangeManager {
 	return &stealthexClientImpl{
 		logger:  logger,
 		factory: factory,

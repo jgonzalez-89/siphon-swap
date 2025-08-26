@@ -1,7 +1,7 @@
 package stealthex
 
 import (
-	"cryptoswap/models"
+	"cryptoswap/internal/services/models"
 	"time"
 )
 

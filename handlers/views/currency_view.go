@@ -1,18 +1,18 @@
 package views
 
 import (
-	"cryptoswap/models"
-	"cryptoswap/services"
+	"cryptoswap/internal/services/models"
+	"cryptoswap/internal/services/swap"
 	"fmt"
 	"net/http"
 	"strings"
 )
 
 type CurrencyViewController struct {
-	aggregator *services.Aggregator
+	aggregator *swap.Aggregator
 }
 
-func NewCurrencyViewController(aggregator *services.Aggregator) *CurrencyViewController {
+func NewCurrencyViewController(aggregator *swap.Aggregator) *CurrencyViewController {
 	return &CurrencyViewController{
 		aggregator: aggregator,
 	}
@@ -20,7 +20,7 @@ func NewCurrencyViewController(aggregator *services.Aggregator) *CurrencyViewCon
 
 // RenderCurrencyList renderiza las monedas como opciones de select para HTMX
 func (vc *CurrencyViewController) RenderCurrencyList(w http.ResponseWriter, r *http.Request) {
-	popular, others, err := vc.aggregator.GetAllCurrencies()
+	popular, others, err := vc.aggregator.GetAllCurrencies(r.Context())
 	if err != nil {
 		w.Write([]byte(`<option value="">Error loading currencies</option>`))
 		return
@@ -56,7 +56,7 @@ func (vc *CurrencyViewController) SearchCurrencies(w http.ResponseWriter, r *htt
 		return
 	}
 
-	popular, others, err := vc.aggregator.GetAllCurrencies()
+	popular, others, err := vc.aggregator.GetAllCurrencies(r.Context())
 	if err != nil {
 		w.Write([]byte(""))
 		return

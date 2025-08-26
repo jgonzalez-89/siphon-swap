@@ -1,4 +1,4 @@
-package services
+package swap
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"cryptoswap/models"
+	"cryptoswap/internal/services/models"
 )
 
 type CoinGeckoService struct {
