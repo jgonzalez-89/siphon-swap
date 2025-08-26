@@ -91,6 +91,7 @@ func main() {
 	swapViewController := viewHandlers.NewSwapViewController(aggregator)
 	currencyViewController := viewHandlers.NewCurrencyViewController(aggregator)
 	tickerViewController := viewHandlers.NewTickerViewController(coinGecko)
+	pageViewController := viewHandlers.NewPageViewController(aggregator)
 
 	// Configurar router
 	r := mux.NewRouter()
@@ -99,6 +100,20 @@ func main() {
 	middlewareLogger := factory.NewLogger("logging-middleware")
 	r.Use(middlewares.LoggingMiddleware(middlewareLogger))
 	r.Use(middlewares.CorsMiddleware)
+
+	// ========================================
+	// SERVIR ARCHIVOS ESTÁTICOS
+	// ========================================
+	// IMPORTANTE: Estas rutas deben ir PRIMERO para que tengan prioridad
+	r.PathPrefix("/static/css/").Handler(
+		http.StripPrefix("/static/css/", http.FileServer(http.Dir("./static/css/"))),
+	)
+	r.PathPrefix("/static/js/").Handler(
+		http.StripPrefix("/static/js/", http.FileServer(http.Dir("./static/js/"))),
+	)
+	r.PathPrefix("/static/images/").Handler(
+		http.StripPrefix("/static/images/", http.FileServer(http.Dir("./static/images/"))),
+	)
 
 	// ========================================
 	// API v2 - JSON endpoints
@@ -173,7 +188,18 @@ func main() {
 		w.Write(fmt.Appendf([]byte{}, `{"status":"healthy","exchanges":%d}`, exchangesAdded))
 	}).Methods("GET")
 
-	// Servir archivos estáticos
+	// ========================================
+	// PÁGINA PRINCIPAL Y FALLBACK
+	// ========================================
+	// Página principal con templates
+	r.HandleFunc("/", pageViewController.RenderIndex).Methods("GET")
+	
+	// Fallback para servir el index.html estático si falla el template
+	r.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/index.html")
+	}).Methods("GET")
+	
+	// Cualquier otra ruta estática no capturada
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	// Configurar servidor
@@ -193,8 +219,11 @@ func main() {
 	// Iniciar servidor
 	mainLogger.Infof(ctx, "🚀 Server starting on http://localhost:%s", port)
 	mainLogger.Infof(ctx, "📝 Endpoints:")
-	mainLogger.Infof(ctx, "   - Frontend: http://localhost:%s", port)
-	mainLogger.Infof(ctx, "   - API Legacy: http://localhost:%s/api/*", port)
+	mainLogger.Infof(ctx, "   - Frontend (Templates): http://localhost:%s/", port)
+	mainLogger.Infof(ctx, "   - Frontend (Static Fallback): http://localhost:%s/index.html", port)
+	mainLogger.Infof(ctx, "   - Static Assets: http://localhost:%s/static/*", port)
+	mainLogger.Infof(ctx, "   ─────────────────────────────")
+	mainLogger.Infof(ctx, "   API Legacy: http://localhost:%s/api/*", port)
 	mainLogger.Infof(ctx, "   ─────────────────────────────")
 	mainLogger.Infof(ctx, "   NEW API v2 (JSON):")
 	mainLogger.Infof(ctx, "   - GET  /api/v2/quote")
