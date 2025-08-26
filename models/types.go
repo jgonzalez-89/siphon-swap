@@ -28,8 +28,8 @@ func (c Currency) WithProvider(provider string) Currency {
 
 func (c *Currency) GetKey() CurrencyKey {
 	return CurrencyKey{
-		Symbol:  c.Symbol,
-		Network: c.Network,
+		Symbol:  strings.ToUpper(c.Symbol),
+		Network: strings.ToUpper(c.Network),
 	}
 }
 

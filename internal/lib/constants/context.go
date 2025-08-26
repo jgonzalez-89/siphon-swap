@@ -2,7 +2,7 @@ package constants
 
 import (
 	"context"
-	"cryptoswap/internal/ids"
+	"cryptoswap/internal/lib/ids"
 	"time"
 )
 
