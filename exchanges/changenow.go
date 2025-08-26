@@ -3,7 +3,7 @@ package exchanges
 
 import (
 	"bytes"
-	"cryptoswap/models"
+	"cryptoswap/internal/services/models"
 	"encoding/json"
 	"fmt"
 	"net/http"

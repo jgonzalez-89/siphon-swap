@@ -1,90 +1,68 @@
 package views
 
 import (
-    "cryptoswap/models"
-    "cryptoswap/services"
-    "fmt"
-    "net/http"
-    "strings"
-    
-    "github.com/gorilla/mux"
+	"cryptoswap/internal/lib/parser"
+	"cryptoswap/internal/services/models"
+	"cryptoswap/internal/services/swap"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type SwapViewController struct {
-    aggregator *services.Aggregator
+	aggregator *swap.Aggregator
 }
 
-func NewSwapViewController(aggregator *services.Aggregator) *SwapViewController {
-    return &SwapViewController{
-        aggregator: aggregator,
-    }
+func NewSwapViewController(aggregator *swap.Aggregator) *SwapViewController {
+	return &SwapViewController{
+		aggregator: aggregator,
+	}
 }
 
 // RenderSwapResult maneja la creación de swap desde HTMX
 func (vc *SwapViewController) RenderSwapResult(w http.ResponseWriter, r *http.Request) {
-    // Parsear form data
-    r.ParseForm()
-    
-    from := r.FormValue("from")
-    to := r.FormValue("to")
-    amountStr := r.FormValue("amount")
-    toAddress := r.FormValue("to_address")
-    refundAddress := r.FormValue("refund_address")
-    exchange := r.FormValue("exchange")
-    
-    // Convertir amount
-    var amount float64
-    fmt.Sscanf(amountStr, "%f", &amount)
-    
-    // Validar
-    if from == "" || to == "" || amount <= 0 || toAddress == "" {
-        vc.renderError(w, "Missing required fields")
-        return
-    }
-    
-    // Crear request
-    req := models.SwapRequest{
-        From:          from,
-        To:            to,
-        Amount:        amount,
-        ToAddress:     toAddress,
-        RefundAddress: refundAddress,
-        Exchange:      exchange,
-    }
-    
-    // Si no hay exchange, obtener el mejor
-    if req.Exchange == "" {
-        quote, err := vc.aggregator.GetBestQuote(from, to, amount)
-        if err != nil || quote == nil {
-            vc.renderError(w, "No exchange available")
-            return
-        }
-        req.Exchange = quote.Exchange
-    }
-    
-    // Crear el swap
-    swap, err := vc.aggregator.CreateExchange(req)
-    if err != nil {
-        vc.renderError(w, fmt.Sprintf("Error: %v", err))
-        return
-    }
-    
-    // Renderizar resultado
-    vc.renderSwapCreated(w, swap)
+	// Parsear form data
+	var req models.SwapRequest
+	if err := parser.Unmarshal(r, &req); err != nil {
+		vc.renderError(w, "Invalid request")
+		return
+	}
+
+	// Si no hay exchange, obtener el mejor
+	if req.Exchange == "" {
+		quote, err := vc.aggregator.GetBestQuote(r.Context(), req.From, req.To, req.Amount)
+		if err != nil || quote == nil {
+			vc.renderError(w, "No exchange available")
+			return
+		}
+		req.Exchange = quote.Exchange
+	}
+
+	// Crear el swap
+	swap, err := vc.aggregator.CreateExchange(req)
+	if err != nil {
+		vc.renderError(w, fmt.Sprintf("Error: %v", err))
+		return
+	}
+
+	// Renderizar resultado
+	vc.renderSwapCreated(w, swap)
 }
 
 // RenderStatus renderiza el estado de un swap
 func (vc *SwapViewController) RenderStatus(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    swapID := vars["id"]
-    
-    if swapID == "" {
-        vc.renderError(w, "Invalid swap ID")
-        return
-    }
-    
-    // TODO: Obtener estado real
-    html := fmt.Sprintf(`
+	vars := mux.Vars(r)
+	swapID := vars["id"]
+
+	if swapID == "" {
+		vc.renderError(w, "Invalid swap ID")
+		return
+	}
+
+	// TODO: Obtener estado real
+	html := fmt.Sprintf(`
     <div style="background: rgba(15, 23, 42, 0.4); border-radius: 12px; padding: 16px;">
         <h3 style="color: white; margin-bottom: 12px;">Swap Status</h3>
         <p style="color: #94a3b8;">ID: <code>%s</code></p>
@@ -96,12 +74,12 @@ func (vc *SwapViewController) RenderStatus(w http.ResponseWriter, r *http.Reques
             Auto-refresh in 5s
         </button>
     </div>`, swapID)
-    
-    w.Write([]byte(html))
+
+	w.Write([]byte(html))
 }
 
 func (vc *SwapViewController) renderSwapCreated(w http.ResponseWriter, swap *models.SwapResponse) {
-    html := fmt.Sprintf(`
+	html := fmt.Sprintf(`
     <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
                 border-radius: 16px; padding: 20px; text-align: center;">
         <div style="width: 60px; height: 60px; margin: 0 auto 16px;
@@ -193,23 +171,23 @@ func (vc *SwapViewController) renderSwapCreated(w http.ResponseWriter, swap *mod
                 });
         }
     </script>`,
-        swap.PayinAddress,
-        swap.PayinAddress,
-        swap.PayinAmount,
-        strings.ToUpper(swap.From),
-        swap.PayoutAmount,
-        strings.ToUpper(swap.To),
-        strings.ToUpper(swap.From),
-        swap.ID,
-        swap.ID,
-        swap.Exchange,
-    )
-    
-    w.Write([]byte(html))
+		swap.PayinAddress,
+		swap.PayinAddress,
+		swap.PayinAmount,
+		strings.ToUpper(swap.From),
+		swap.PayoutAmount,
+		strings.ToUpper(swap.To),
+		strings.ToUpper(swap.From),
+		swap.ID,
+		swap.ID,
+		swap.Exchange,
+	)
+
+	w.Write([]byte(html))
 }
 
 func (vc *SwapViewController) renderError(w http.ResponseWriter, message string) {
-    html := fmt.Sprintf(`
+	html := fmt.Sprintf(`
     <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
                 border-radius: 12px; padding: 16px; text-align: center;">
         <h3 style="color: #f87171; margin-bottom: 8px;">Error</h3>
@@ -221,6 +199,6 @@ func (vc *SwapViewController) renderError(w http.ResponseWriter, message string)
             Go Back
         </button>
     </div>`, message)
-    
-    w.Write([]byte(html))
+
+	w.Write([]byte(html))
 }

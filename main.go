@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"cryptoswap/exchanges"
-	"cryptoswap/handlers"
-	apiHandlers "cryptoswap/handlers/api"
 	viewHandlers "cryptoswap/handlers/views"
+	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
 	"cryptoswap/internal/lib/middlewares"
-	"cryptoswap/services"
+	"cryptoswap/internal/repository/coingecko"
+	"cryptoswap/internal/services/swap"
+	apiHandlers "cryptoswap/internal/transport/handlers"
 	"fmt"
 	"net/http"
 	"os"
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	// Crear aggregator
-	aggregator := services.NewAggregator()
+	aggregator := swap.NewAggregator(factory.NewLogger("aggregator"))
 
 	// Añadir exchanges disponibles
 	exchangesAdded := 0
@@ -64,14 +65,14 @@ func main() {
 		mainLogger.Infof(ctx, "✅ LetsExchange exchange added")
 		exchangesAdded++
 	}
-	
+
 	mainLogger.Infof(ctx, "📊 Total exchanges configured: %d", exchangesAdded)
 
 	// Pre-cargar currencies en background
 	go func() {
 		mainLogger.Info(ctx, "🔄 Pre-loading currencies...")
 		start := time.Now()
-		popular, others, err := aggregator.GetAllCurrencies()
+		popular, others, err := aggregator.GetAllCurrencies(ctx)
 		if err != nil {
 			mainLogger.Errorf(ctx, "❌ Error loading currencies: %v", err)
 			return
@@ -82,16 +83,12 @@ func main() {
 	}()
 
 	// CoinGecko service
-	cgKey := os.Getenv("COINGECKO_API_KEY")
-	cgBase := os.Getenv("COINGECKO_BASE_URL")
-	coinGecko := services.NewCoinGeckoService(cgBase, cgKey)
-
-	// ========================================
-	// HANDLERS LEGACY (temporalmente)
-	// ========================================
-	quoteHandler := handlers.NewQuoteHandler(aggregator)
-	currencyHandler := handlers.NewCurrencyHandler(aggregator)
-	swapHandler := handlers.NewSwapHandler(aggregator)
+	cgKey := getEnv("COINGECKO_API_KEY", "")
+	cgBase := getEnv("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3")
+	cgHttpFactory := httpclient.NewFactory(httpclient.NewConfigWithAuthHeader(cgBase, cgKey,
+		"x-cg-demo-api-key", 10*time.Second), factory.NewLogger("coingecko"))
+	coinGecko := swap.NewCoinGeckoService(factory.NewLogger("coingecko"),
+		coingecko.NewCoinGecko(factory.NewLogger("coingecko"), cgHttpFactory))
 
 	// ========================================
 	// NUEVOS HANDLERS - API (JSON)
@@ -136,23 +133,23 @@ func main() {
 	// API v2 - JSON endpoints
 	// ========================================
 	apiv2 := r.PathPrefix("/api/v2").Subrouter()
-	
+
 	// Quote endpoints
 	apiv2.HandleFunc("/quote", apiQuoteHandler.GetQuote).Methods("GET")
 	apiv2.HandleFunc("/quotes", apiQuoteHandler.GetAllQuotes).Methods("POST")
 	apiv2.HandleFunc("/min-amounts", apiQuoteHandler.GetMinAmounts).Methods("GET")
-	
+
 	// Swap endpoints
 	apiv2.HandleFunc("/swap", apiSwapHandler.CreateSwap).Methods("POST")
 	apiv2.HandleFunc("/swap/{id}/status", apiSwapHandler.GetStatus).Methods("GET")
-	
+
 	// Currency endpoints
 	apiv2.HandleFunc("/currencies", apiCurrencyHandler.GetAll).Methods("GET")
 	apiv2.HandleFunc("/exchanges", apiCurrencyHandler.GetExchanges).Methods("GET")
-	
+
 	// Ticker endpoint
 	apiv2.HandleFunc("/ticker", apiTickerHandler.GetTicker).Methods("GET")
-	
+
 	// Health check v2
 	apiv2.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -163,18 +160,18 @@ func main() {
 	// HTMX - HTML endpoints
 	// ========================================
 	htmx := r.PathPrefix("/htmx").Subrouter()
-	
+
 	// Quote views
 	htmx.HandleFunc("/quote", quoteViewController.RenderQuotes).Methods("POST")
-	
+
 	// Swap views
 	htmx.HandleFunc("/swap", swapViewController.RenderSwapResult).Methods("POST")
 	htmx.HandleFunc("/swap/{id}/status", swapViewController.RenderStatus).Methods("GET")
-	
+
 	// Currency views
 	htmx.HandleFunc("/currencies", currencyViewController.RenderCurrencyList).Methods("GET")
 	htmx.HandleFunc("/currencies/search", currencyViewController.SearchCurrencies).Methods("POST")
-	
+
 	// Ticker view
 	htmx.HandleFunc("/ticker", tickerViewController.RenderTicker).Methods("GET")
 
@@ -182,22 +179,6 @@ func main() {
 	// API LEGACY (mantener funcionando)
 	// ========================================
 	api := r.PathPrefix("/api").Subrouter()
-
-	// Quotes
-	api.HandleFunc("/quote", quoteHandler.GetQuote).Methods("GET", "POST")
-	api.HandleFunc("/quotes", quoteHandler.GetAllQuotes).Methods("POST")
-	api.HandleFunc("/min-amounts", quoteHandler.GetMinAmounts).Methods("GET")
-
-	// Currencies
-	api.HandleFunc("/currencies", currencyHandler.GetAll).Methods("GET")
-	api.HandleFunc("/exchanges", currencyHandler.GetExchanges).Methods("GET")
-
-	// Swap
-	api.HandleFunc("/swap", swapHandler.CreateSwap).Methods("POST")
-	api.HandleFunc("/swap/{id}/status", swapHandler.GetStatus).Methods("GET")
-
-	// Ticker
-	api.HandleFunc("/ticker", handlers.NewGeckoHandler(coinGecko)).Methods("GET")
 
 	// Health check
 	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -210,12 +191,12 @@ func main() {
 	// ========================================
 	// Página principal con templates
 	r.HandleFunc("/", pageViewController.RenderIndex).Methods("GET")
-	
+
 	// Fallback para servir el index.html estático si falla el template
 	r.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./static/index.html")
 	}).Methods("GET")
-	
+
 	// Cualquier otra ruta estática no capturada
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
@@ -261,4 +242,12 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "❌ Server failed to start: %v", err)
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
