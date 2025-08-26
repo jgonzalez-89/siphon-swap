@@ -1,4 +1,4 @@
-// Swap Manager Class
+// static/js/app.js
 class SwapManager {
     constructor() {
         this.init();

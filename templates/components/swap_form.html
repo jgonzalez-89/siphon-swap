@@ -23,21 +23,37 @@
                        hx-target="#rate-info"
                        hx-include="[name='from'],[name='to']">
                 
-                <div class="token-button" style="flex-shrink: 0;">
-                    <div class="token-icon">
-                        <span id="fromTokenIcon">BTC</span>
+                <div style="position: relative; flex-shrink: 0;">
+                    <input type="hidden" name="from" id="fromValue" value="btc">
+                    
+                    <!-- Botón para abrir dropdown -->
+                    <div class="token-button" onclick="toggleDropdown('from')" style="cursor: pointer;">
+                        <div class="token-icon">
+                            <span id="fromTokenIcon">BTC</span>
+                        </div>
+                        <span id="fromTokenLabel">Bitcoin</span>
+                        <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </div>
-                    <select name="from" 
-                            id="fromSelect"
-                            class="token-select">
-                        <option value="btc">BTC - Bitcoin</option>
-                        <option value="eth">ETH - Ethereum</option>
-                        <option value="usdt">USDT - Tether</option>
-
-                    </select>
-                    <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
+                    
+                    <!-- Dropdown con búsqueda -->
+                    <div id="fromDropdown" class="currency-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); z-index: 1000; width: 250px;">
+                        <div class="currency-search-box">
+                            <input type="text" 
+                                   placeholder="Search currency..."
+                                   class="currency-search-input"
+                                   oninput="searchCurrencies('from', this.value)">
+                        </div>
+                        <div class="currency-list">
+                            <select id="fromSelectHidden" 
+                                    class="currency-select" 
+                                    size="10" 
+                                    onchange="selectCurrency('from', this)">
+                                <!-- Opciones se cargan aquí -->
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,21 +76,37 @@
                        style="background: transparent; border: none; color: white; font-size: 28px; font-weight: 600; flex: 1; outline: none; opacity: 0.7; min-width: 0;"
                        id="toAmount">
                 
-                <div class="token-button" style="flex-shrink: 0;">
-                    <div class="token-icon" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);">
-                        <span id="toTokenIcon">ETH</span>
+                <div style="position: relative; flex-shrink: 0;">
+                    <input type="hidden" name="to" id="toValue" value="eth">
+                    
+                    <!-- Botón para abrir dropdown -->
+                    <div class="token-button" onclick="toggleDropdown('to')" style="cursor: pointer;">
+                        <div class="token-icon" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);">
+                            <span id="toTokenIcon">ETH</span>
+                        </div>
+                        <span id="toTokenLabel">Ethereum</span>
+                        <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </div>
-                    <select name="to" 
-                            id="toSelect"
-                            class="token-select">
-                        <option value="eth">ETH - Ethereum</option>
-                        <option value="btc">BTC - Bitcoin</option>
-                        <option value="usdt">USDT - Tether</option>
-
-                    </select>
-                    <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
+                    
+                    <!-- Dropdown con búsqueda -->
+                    <div id="toDropdown" class="currency-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); z-index: 1000; width: 250px;">
+                        <div class="currency-search-box">
+                            <input type="text" 
+                                   placeholder="Search currency..."
+                                   class="currency-search-input"
+                                   oninput="searchCurrencies('to', this.value)">
+                        </div>
+                        <div class="currency-list">
+                            <select id="toSelectHidden" 
+                                    class="currency-select"
+                                    size="10" 
+                                    onchange="selectCurrency('to', this)">
+                                <!-- Opciones se cargan aquí -->
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -126,29 +158,147 @@
 <script>
     // Cargar currencies cuando el componente se monta
     document.addEventListener('DOMContentLoaded', function() {
-        // Cargar currencies para ambos selects
+        // Cargar currencies para ambos dropdowns
         htmx.ajax('GET', '/htmx/currencies', {
-            target: '#fromSelect',
+            target: '#fromSelectHidden',
             swap: 'innerHTML'
-        }).then(() => {
-            document.getElementById('fromSelect').value = 'btc';
         });
         
         htmx.ajax('GET', '/htmx/currencies', {
-            target: '#toSelect',
+            target: '#toSelectHidden',
             swap: 'innerHTML'
-        }).then(() => {
-            document.getElementById('toSelect').value = 'eth';
+        });
+    });
+    
+    function toggleDropdown(type) {
+        const dropdown = document.getElementById(type + 'Dropdown');
+        const isOpen = dropdown.style.display === 'block';
+        
+        // Cerrar todos los dropdowns
+        document.getElementById('fromDropdown').style.display = 'none';
+        document.getElementById('toDropdown').style.display = 'none';
+        
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            const searchInput = dropdown.querySelector('.currency-search-input');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.value = '';
+            }
+        }
+    }
+    
+    function searchCurrencies(type, query) {
+        const select = document.getElementById(type + 'SelectHidden');
+        if (!select) return;
+        
+        if (!query) {
+            // Recargar todas las currencies con su estructura original
+            htmx.ajax('GET', '/htmx/currencies', {
+                target: '#' + type + 'SelectHidden',
+                swap: 'innerHTML'
+            });
+            return;
+        }
+        
+        // Obtener todas las opciones de todos los optgroups
+        const optgroups = select.getElementsByTagName('optgroup');
+        let allOptions = [];
+        
+        // Recolectar todas las opciones manteniendo referencia a su grupo
+        for (let group of optgroups) {
+            const groupLabel = group.label;
+            const options = Array.from(group.getElementsByTagName('option'));
+            options.forEach(opt => {
+                allOptions.push({
+                    value: opt.value,
+                    text: opt.text,
+                    group: groupLabel
+                });
+            });
+        }
+        
+        // Filtrar
+        const lowerQuery = query.toLowerCase();
+        const filtered = allOptions.filter(opt => 
+            opt.text.toLowerCase().includes(lowerQuery) || 
+            opt.value.toLowerCase().includes(lowerQuery)
+        );
+        
+        // Reconstruir manteniendo grupos si hay resultados en múltiples grupos
+        const groupedResults = {};
+        filtered.forEach(opt => {
+            if (!groupedResults[opt.group]) {
+                groupedResults[opt.group] = [];
+            }
+            groupedResults[opt.group].push(opt);
         });
         
-        // Configurar listeners para cambios
-        document.getElementById('fromSelect').addEventListener('change', function() {
-            htmx.trigger('#fromAmount', 'keyup');
-        });
+        // Crear el HTML
+        let html = '';
+        for (let groupName in groupedResults) {
+            if (groupedResults[groupName].length > 0) {
+                html += `<optgroup label="${groupName}">`;
+                groupedResults[groupName].forEach(opt => {
+                    html += `<option value="${opt.value}">${opt.text}</option>`;
+                });
+                html += '</optgroup>';
+            }
+        }
         
-        document.getElementById('toSelect').addEventListener('change', function() {
-            htmx.trigger('#fromAmount', 'keyup');
-        });
+        // Si no hay resultados
+        if (!html) {
+            html = '<option value="" disabled>No currencies found</option>';
+        }
+        
+        select.innerHTML = html;
+    }
+    
+    function selectCurrency(type, selectElement) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        if (!selectedOption) return;
+        
+        const value = selectedOption.value;
+        const text = selectedOption.text;
+        const parts = text.split(' - ');
+        const symbol = parts[0];
+        const name = parts[1] ? parts[1].replace(/\([^)]*\)/, '').trim() : text;
+        
+        document.getElementById(type + 'Value').value = value;
+        document.getElementById(type + 'TokenIcon').textContent = symbol;
+        document.getElementById(type + 'TokenLabel').textContent = name;
+        document.getElementById(type + 'Dropdown').style.display = 'none';
+        
+        // Trigger quote update
+        htmx.trigger('#fromAmount', 'keyup');
+    }
+    
+    function swapPairs() {
+        const fromValue = document.getElementById('fromValue').value;
+        const fromIcon = document.getElementById('fromTokenIcon').textContent;
+        const fromLabel = document.getElementById('fromTokenLabel').textContent;
+        
+        const toValue = document.getElementById('toValue').value;
+        const toIcon = document.getElementById('toTokenIcon').textContent;
+        const toLabel = document.getElementById('toTokenLabel').textContent;
+        
+        document.getElementById('fromValue').value = toValue;
+        document.getElementById('fromTokenIcon').textContent = toIcon;
+        document.getElementById('fromTokenLabel').textContent = toLabel;
+        
+        document.getElementById('toValue').value = fromValue;
+        document.getElementById('toTokenIcon').textContent = fromIcon;
+        document.getElementById('toTokenLabel').textContent = fromLabel;
+        
+        htmx.trigger('#fromAmount', 'keyup');
+    }
+    
+    // Cerrar dropdown al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[id$="Dropdown"]') && !e.target.closest('.token-button')) {
+            document.getElementById('fromDropdown').style.display = 'none';
+            document.getElementById('toDropdown').style.display = 'none';
+        }
     });
 </script>
 
