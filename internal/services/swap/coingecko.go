@@ -49,8 +49,6 @@ func (s *CoinGeckoService) cleanupVsAndN(vs string, n int) (string, int) {
 	if vs == "" {
 		vs = "usd"
 	}
-	if n <= 0 || n > 250 {
-		n = 6
-	}
-	return vs, n
+
+	return vs, min(max(n, 0), 250)
 }
