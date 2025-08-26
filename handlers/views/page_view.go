@@ -31,7 +31,7 @@ func (vc *PageViewController) RenderIndex(w http.ResponseWriter, r *http.Request
     data := PageData{
         Title:         "Siphon - Privacy-First Crypto Exchange",
         ExchangeCount: len(exchanges),
-        ExchangeNames: joinStrings(exchanges, ", "),
+        ExchangeNames: strings.Join(exchanges, ", "),
         PairCount:     len(popular) + len(others),
     }
     
