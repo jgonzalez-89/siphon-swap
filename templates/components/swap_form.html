@@ -29,15 +29,10 @@
                     </div>
                     <select name="from" 
                             id="fromSelect"
-                            class="token-select"
-                            hx-post="/htmx/quote"
-                            hx-trigger="change"
-                            hx-target="#rate-info"
-                            hx-include="[name='amount'],[name='to']"
-                            hx-get="/htmx/currencies"
-                            hx-trigger="load"
-                            hx-swap="innerHTML">
-                        <option value="btc">Loading...</option>
+                            class="token-select">
+                        <option value="btc">BTC - Bitcoin</option>
+                        <option value="eth">ETH - Ethereum</option>
+                        <option value="usdt">USDT - Tether</option>
                     </select>
                     <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -70,15 +65,10 @@
                     </div>
                     <select name="to" 
                             id="toSelect"
-                            class="token-select"
-                            hx-post="/htmx/quote"
-                            hx-trigger="change"
-                            hx-target="#rate-info"
-                            hx-include="[name='amount'],[name='from']"
-                            hx-get="/htmx/currencies"
-                            hx-trigger="load"
-                            hx-swap="innerHTML">
-                        <option value="eth">Loading...</option>
+                            class="token-select">
+                        <option value="eth">ETH - Ethereum</option>
+                        <option value="btc">BTC - Bitcoin</option>
+                        <option value="usdt">USDT - Tether</option>
                     </select>
                     <svg style="width: 16px; height: 16px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -130,4 +120,33 @@
         </div>
     </form>
 </div>
+
+<script>
+    // Cargar currencies cuando el componente se monta
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cargar currencies para ambos selects
+        htmx.ajax('GET', '/htmx/currencies', {
+            target: '#fromSelect',
+            swap: 'innerHTML'
+        }).then(() => {
+            document.getElementById('fromSelect').value = 'btc';
+        });
+        
+        htmx.ajax('GET', '/htmx/currencies', {
+            target: '#toSelect',
+            swap: 'innerHTML'
+        }).then(() => {
+            document.getElementById('toSelect').value = 'eth';
+        });
+        
+        // Configurar listeners para cambios
+        document.getElementById('fromSelect').addEventListener('change', function() {
+            htmx.trigger('#fromAmount', 'keyup');
+        });
+        
+        document.getElementById('toSelect').addEventListener('change', function() {
+            htmx.trigger('#fromAmount', 'keyup');
+        });
+    });
+</script>
 {{end}}
