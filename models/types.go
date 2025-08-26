@@ -1,3 +1,4 @@
+// models/types.go
 package models
 
 import (

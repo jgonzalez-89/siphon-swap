@@ -4,6 +4,8 @@ import (
 	"context"
 	"cryptoswap/exchanges"
 	"cryptoswap/handlers"
+	apiHandlers "cryptoswap/handlers/api"
+	viewHandlers "cryptoswap/handlers/views"
 	"cryptoswap/internal/lib/logger"
 	"cryptoswap/internal/lib/middlewares"
 	"cryptoswap/services"
@@ -62,15 +64,33 @@ func main() {
 			len(popular)+len(others), time.Since(start).Seconds())
 	}()
 
-	// CoinGecko (para /api/ticker) — opcional API key en free
+	// CoinGecko service
 	cgKey := os.Getenv("COINGECKO_API_KEY")
-	cgBase := os.Getenv("COINGECKO_BASE_URL") // opcional (Pro)
+	cgBase := os.Getenv("COINGECKO_BASE_URL")
 	coinGecko := services.NewCoinGeckoService(cgBase, cgKey)
 
-	// Crear handlers
+	// ========================================
+	// HANDLERS LEGACY (temporalmente)
+	// ========================================
 	quoteHandler := handlers.NewQuoteHandler(aggregator)
 	currencyHandler := handlers.NewCurrencyHandler(aggregator)
 	swapHandler := handlers.NewSwapHandler(aggregator)
+
+	// ========================================
+	// NUEVOS HANDLERS - API (JSON)
+	// ========================================
+	apiQuoteHandler := apiHandlers.NewQuoteHandler(aggregator)
+	apiSwapHandler := apiHandlers.NewSwapHandler(aggregator)
+	apiCurrencyHandler := apiHandlers.NewCurrencyHandler(aggregator)
+	apiTickerHandler := apiHandlers.NewTickerHandler(coinGecko)
+
+	// ========================================
+	// NUEVOS HANDLERS - Views (HTML/HTMX)
+	// ========================================
+	quoteViewController := viewHandlers.NewQuoteViewController(aggregator)
+	swapViewController := viewHandlers.NewSwapViewController(aggregator)
+	currencyViewController := viewHandlers.NewCurrencyViewController(aggregator)
+	tickerViewController := viewHandlers.NewTickerViewController(coinGecko)
 
 	// Configurar router
 	r := mux.NewRouter()
@@ -80,7 +100,55 @@ func main() {
 	r.Use(middlewares.LoggingMiddleware(middlewareLogger))
 	r.Use(middlewares.CorsMiddleware)
 
-	// API endpoints
+	// ========================================
+	// API v2 - JSON endpoints
+	// ========================================
+	apiv2 := r.PathPrefix("/api/v2").Subrouter()
+	
+	// Quote endpoints
+	apiv2.HandleFunc("/quote", apiQuoteHandler.GetQuote).Methods("GET")
+	apiv2.HandleFunc("/quotes", apiQuoteHandler.GetAllQuotes).Methods("POST")
+	apiv2.HandleFunc("/min-amounts", apiQuoteHandler.GetMinAmounts).Methods("GET")
+	
+	// Swap endpoints
+	apiv2.HandleFunc("/swap", apiSwapHandler.CreateSwap).Methods("POST")
+	apiv2.HandleFunc("/swap/{id}/status", apiSwapHandler.GetStatus).Methods("GET")
+	
+	// Currency endpoints
+	apiv2.HandleFunc("/currencies", apiCurrencyHandler.GetAll).Methods("GET")
+	apiv2.HandleFunc("/exchanges", apiCurrencyHandler.GetExchanges).Methods("GET")
+	
+	// Ticker endpoint
+	apiv2.HandleFunc("/ticker", apiTickerHandler.GetTicker).Methods("GET")
+	
+	// Health check v2
+	apiv2.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"status":"healthy","exchanges":%d,"version":"2.0"}`, exchangesAdded)
+	}).Methods("GET")
+
+	// ========================================
+	// HTMX - HTML endpoints
+	// ========================================
+	htmx := r.PathPrefix("/htmx").Subrouter()
+	
+	// Quote views
+	htmx.HandleFunc("/quote", quoteViewController.RenderQuotes).Methods("POST")
+	
+	// Swap views
+	htmx.HandleFunc("/swap", swapViewController.RenderSwapResult).Methods("POST")
+	htmx.HandleFunc("/swap/{id}/status", swapViewController.RenderStatus).Methods("GET")
+	
+	// Currency views
+	htmx.HandleFunc("/currencies", currencyViewController.RenderCurrencyList).Methods("GET")
+	htmx.HandleFunc("/currencies/search", currencyViewController.SearchCurrencies).Methods("POST")
+	
+	// Ticker view
+	htmx.HandleFunc("/ticker", tickerViewController.RenderTicker).Methods("GET")
+
+	// ========================================
+	// API LEGACY (mantener funcionando)
+	// ========================================
 	api := r.PathPrefix("/api").Subrouter()
 
 	// Quotes
@@ -96,7 +164,7 @@ func main() {
 	api.HandleFunc("/swap", swapHandler.CreateSwap).Methods("POST")
 	api.HandleFunc("/swap/{id}/status", swapHandler.GetStatus).Methods("GET")
 
-	// Ticker: usamos TU mismo handler (HTML/JSON) pero con datos reales + fallback
+	// Ticker
 	api.HandleFunc("/ticker", handlers.NewGeckoHandler(coinGecko)).Methods("GET")
 
 	// Health check
@@ -105,7 +173,7 @@ func main() {
 		w.Write(fmt.Appendf([]byte{}, `{"status":"healthy","exchanges":%d}`, exchangesAdded))
 	}).Methods("GET")
 
-	// Servir archivos estáticos (frontend)
+	// Servir archivos estáticos
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	// Configurar servidor
@@ -126,9 +194,26 @@ func main() {
 	mainLogger.Infof(ctx, "🚀 Server starting on http://localhost:%s", port)
 	mainLogger.Infof(ctx, "📝 Endpoints:")
 	mainLogger.Infof(ctx, "   - Frontend: http://localhost:%s", port)
-	mainLogger.Infof(ctx, "   - API Health: http://localhost:%s/api/health", port)
-	mainLogger.Infof(ctx, "   - Ticker: http://localhost:%s/api/ticker", port)
-	mainLogger.Infof(ctx, "   - Currencies: http://localhost:%s/api/currencies", port)
+	mainLogger.Infof(ctx, "   - API Legacy: http://localhost:%s/api/*", port)
+	mainLogger.Infof(ctx, "   ─────────────────────────────")
+	mainLogger.Infof(ctx, "   NEW API v2 (JSON):")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/quote")
+	mainLogger.Infof(ctx, "   - POST /api/v2/quotes")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/min-amounts")
+	mainLogger.Infof(ctx, "   - POST /api/v2/swap")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/swap/{id}/status")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/currencies")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/exchanges")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/ticker")
+	mainLogger.Infof(ctx, "   - GET  /api/v2/health")
+	mainLogger.Infof(ctx, "   ─────────────────────────────")
+	mainLogger.Infof(ctx, "   NEW HTMX (HTML):")
+	mainLogger.Infof(ctx, "   - POST /htmx/quote")
+	mainLogger.Infof(ctx, "   - POST /htmx/swap")
+	mainLogger.Infof(ctx, "   - GET  /htmx/swap/{id}/status")
+	mainLogger.Infof(ctx, "   - GET  /htmx/currencies")
+	mainLogger.Infof(ctx, "   - POST /htmx/currencies/search")
+	mainLogger.Infof(ctx, "   - GET  /htmx/ticker")
 	mainLogger.Infof(ctx, "──────────────────────────────────────")
 
 	if err := server.ListenAndServe(); err != nil {
