@@ -170,6 +170,7 @@ func main() {
 
 	// Currency views
 	htmx.HandleFunc("/currencies", currencyViewController.RenderCurrencyList).Methods("GET")
+	htmx.HandleFunc("/currencies/selector", currencyViewController.RenderCurrencySelector).Methods("GET")
 	htmx.HandleFunc("/currencies/search", currencyViewController.SearchCurrencies).Methods("POST")
 
 	// Ticker view
