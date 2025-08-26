@@ -44,11 +44,28 @@ func main() {
 
 	// Añadir exchanges disponibles
 	exchangesAdded := 0
-	exchangesAdded += loadExchange(mainLogger, ctx, aggregator, changeNowKey, "ChangeNOW")
-	exchangesAdded += loadExchange(mainLogger, ctx, aggregator, simpleSwapKey, "SimpleSwap")
-	exchangesAdded += loadExchange(mainLogger, ctx, aggregator, stealthExKey, "StealthEX")
-	exchangesAdded += loadExchange(mainLogger, ctx, aggregator, letsExchangeKey, "LetsExchange")
-	mainLogger.Info(ctx, "📊 Total exchanges configured: %d", exchangesAdded)
+	if changeNowKey != "" {
+		aggregator.AddExchange(exchanges.NewChangeNow(changeNowKey))
+		mainLogger.Infof(ctx, "✅ ChangeNOW exchange added")
+		exchangesAdded++
+	}
+	if simpleSwapKey != "" {
+		aggregator.AddExchange(exchanges.NewSimpleSwap(simpleSwapKey))
+		mainLogger.Infof(ctx, "✅ SimpleSwap exchange added")
+		exchangesAdded++
+	}
+	if stealthExKey != "" {
+		aggregator.AddExchange(exchanges.NewStealthEx(stealthExKey))
+		mainLogger.Infof(ctx, "✅ StealthEX exchange added")
+		exchangesAdded++
+	}
+	if letsExchangeKey != "" {
+		aggregator.AddExchange(exchanges.NewLetsExchange(letsExchangeKey))
+		mainLogger.Infof(ctx, "✅ LetsExchange exchange added")
+		exchangesAdded++
+	}
+	
+	mainLogger.Infof(ctx, "📊 Total exchanges configured: %d", exchangesAdded)
 
 	// Pre-cargar currencies en background
 	go func() {
@@ -185,7 +202,7 @@ func main() {
 	// Health check
 	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(fmt.Appendf([]byte{}, `{"status":"healthy","exchanges":%d}`, exchangesAdded))
+		fmt.Fprintf(w, `{"status":"healthy","exchanges":%d}`, exchangesAdded)
 	}).Methods("GET")
 
 	// ========================================
@@ -236,26 +253,12 @@ func main() {
 	mainLogger.Infof(ctx, "   - GET  /api/v2/ticker")
 	mainLogger.Infof(ctx, "   - GET  /api/v2/health")
 	mainLogger.Infof(ctx, "   ─────────────────────────────")
-	mainLogger.Infof(ctx, "   NEW HTMX (HTML):")
-	mainLogger.Infof(ctx, "   - POST /htmx/quote")
-	mainLogger.Infof(ctx, "   - POST /htmx/swap")
-	mainLogger.Infof(ctx, "   - GET  /htmx/swap/{id}/status")
-	mainLogger.Infof(ctx, "   - GET  /htmx/currencies")
-	mainLogger.Infof(ctx, "   - POST /htmx/currencies/search")
-	mainLogger.Infof(ctx, "   - GET  /htmx/ticker")
+	mainLogger.Infof(ctx, "   API Legacy: http://localhost:%s/api/*", port)
+	mainLogger.Infof(ctx, "   NEW API v2: http://localhost:%s/api/v2/*", port)
+	mainLogger.Infof(ctx, "   NEW HTMX: http://localhost:%s/htmx/*", port)
 	mainLogger.Infof(ctx, "──────────────────────────────────────")
 
 	if err := server.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "❌ Server failed to start: %v", err)
 	}
-}
-
-func loadExchange(mainLogger logger.Logger, ctx context.Context,
-	aggregator *services.Aggregator, key, name string) int {
-	if key != "" {
-		aggregator.AddExchange(exchanges.NewStealthEx(key))
-		mainLogger.Infof(ctx, "✅ %s exchange added", name)
-		return 1
-	}
-	return 0
 }

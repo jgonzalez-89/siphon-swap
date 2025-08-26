@@ -47,52 +47,97 @@ class SwapManager {
     setupNavbarScroll() {
         window.addEventListener('scroll', function() {
             const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
+            if (navbar) {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
             }
         });
     }
 
     loadCurrencies() {
         console.log('Loading currencies...');
+        // Check if we're using templates or static HTML
+        const fromSelect = document.getElementById('fromSelect');
+        const toSelect = document.getElementById('toSelect');
         
-        // This is now handled by HTMX in the template
-        // but we keep the fallback here
-        setTimeout(() => {
-            const fromSelect = document.getElementById('fromSelect');
-            const toSelect = document.getElementById('toSelect');
-            
-            if (fromSelect && fromSelect.innerHTML.includes('Loading')) {
-                // Fallback if HTMX fails
-                const fallback = `
-                    <option value="btc">BTC</option>
-                    <option value="eth">ETH</option>
-                    <option value="usdt">USDT</option>
-                `;
-                fromSelect.innerHTML = fallback;
-                toSelect.innerHTML = fallback;
+        if (!fromSelect || !toSelect) {
+            console.log('Select elements not found');
+            return;
+        }
+        
+        // If using templates, currencies are loaded via HTMX
+        // If using static HTML, load via API
+        if (window.location.pathname === '/index.html' || !window.htmx) {
+            // Static HTML fallback - use legacy API
+            fetch('/api/currencies', {
+                headers: {
+                    'HX-Request': 'true'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                fromSelect.innerHTML = html;
+                toSelect.innerHTML = html;
                 
                 fromSelect.value = 'btc';
                 toSelect.value = 'eth';
                 this.updateFromIcon();
                 this.updateToIcon();
-            }
-        }, 3000);
+            })
+            .catch(error => {
+                console.error('Error loading currencies:', error);
+                this.loadFallbackCurrencies();
+            });
+        }
+    }
+    
+    loadFallbackCurrencies() {
+        const fallback = `
+            <option value="btc">BTC - Bitcoin</option>
+            <option value="eth">ETH - Ethereum</option>
+            <option value="usdt">USDT - Tether</option>
+            <option value="usdc">USDC - USD Coin</option>
+            <option value="bnb">BNB - Binance Coin</option>
+        `;
+        
+        const fromSelect = document.getElementById('fromSelect');
+        const toSelect = document.getElementById('toSelect');
+        
+        if (fromSelect && toSelect) {
+            fromSelect.innerHTML = fallback;
+            toSelect.innerHTML = fallback;
+            fromSelect.value = 'btc';
+            toSelect.value = 'eth';
+            this.updateFromIcon();
+            this.updateToIcon();
+        }
     }
 
     handleAmountChange(event) {
         const amount = parseFloat(event.target.value);
         const button = document.getElementById('swapButton');
         
-        if (amount && amount > 0) {
-            button.disabled = false;
-            button.querySelector('span').textContent = 'Get Best Quote';
-        } else {
-            button.disabled = true;
-            button.querySelector('span').textContent = 'Enter Amount To Preview Swap';
-            document.getElementById('toAmount').value = '';
+        if (button) {
+            if (amount && amount > 0) {
+                button.disabled = false;
+                const span = button.querySelector('span');
+                if (span) {
+                    span.textContent = 'Get Best Quote';
+                }
+            } else {
+                button.disabled = true;
+                const span = button.querySelector('span');
+                if (span) {
+                    span.textContent = 'Enter Amount To Preview Swap';
+                }
+                const toAmount = document.getElementById('toAmount');
+                if (toAmount) {
+                    toAmount.value = '';
+                }
+            }
         }
     }
 
@@ -120,17 +165,28 @@ function swapPairs() {
     const fromAmount = document.getElementById('fromAmount');
     const toAmount = document.getElementById('toAmount');
     
-    const tempValue = fromSelect.value;
-    fromSelect.value = toSelect.value;
-    toSelect.value = tempValue;
-    
-    document.getElementById('fromTokenIcon').textContent = fromSelect.value.toUpperCase().slice(0, 3);
-    document.getElementById('toTokenIcon').textContent = toSelect.value.toUpperCase().slice(0, 3);
-    
-    toAmount.value = '';
-    
-    if (fromAmount.value) {
-        htmx.trigger(fromAmount, 'keyup');
+    if (fromSelect && toSelect) {
+        const tempValue = fromSelect.value;
+        fromSelect.value = toSelect.value;
+        toSelect.value = tempValue;
+        
+        const fromIcon = document.getElementById('fromTokenIcon');
+        const toIcon = document.getElementById('toTokenIcon');
+        
+        if (fromIcon) {
+            fromIcon.textContent = fromSelect.value.toUpperCase().slice(0, 3);
+        }
+        if (toIcon) {
+            toIcon.textContent = toSelect.value.toUpperCase().slice(0, 3);
+        }
+        
+        if (toAmount) {
+            toAmount.value = '';
+        }
+        
+        if (fromAmount && fromAmount.value && window.htmx) {
+            htmx.trigger(fromAmount, 'keyup');
+        }
     }
 }
 
@@ -164,7 +220,10 @@ function executeSwap() {
     })
     .then(response => response.text())
     .then(html => {
-        document.querySelector('.swap-card').innerHTML = html;
+        const swapCard = document.querySelector('.swap-card');
+        if (swapCard) {
+            swapCard.innerHTML = html;
+        }
     })
     .catch(error => {
         alert('Error: ' + error);
@@ -173,14 +232,18 @@ function executeSwap() {
 
 function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
-    menu.classList.toggle('active');
+    if (menu) {
+        menu.classList.toggle('active');
+    }
 }
 
 function selectExchange(exchange) {
     const button = document.getElementById('swapButton');
-    const buttonText = button.querySelector('span') || button;
-    buttonText.textContent = 'Swap via ' + exchange;
-    button.setAttribute('data-exchange', exchange);
+    if (button) {
+        const buttonText = button.querySelector('span') || button;
+        buttonText.textContent = 'Swap via ' + exchange;
+        button.setAttribute('data-exchange', exchange);
+    }
 }
 
 // Initialize when DOM is ready
