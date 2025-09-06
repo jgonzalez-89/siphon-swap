@@ -29,7 +29,7 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 __debug_bin*
 .DS_Store
