@@ -1,0 +1,27 @@
+---
+server:
+  port: ${SERVER_PORT:-8080}
+logger:
+  level: info
+database:
+  host: mysql
+  port: 3306
+  user: root
+  password: admin123
+  schema: cryptoswap
+exchanges:
+  change_now:
+    api_key: ${CHANGENOW_API_KEY:-XXXX}
+    auth_header: x-changenow-api-key
+    timeout_seconds: 10
+    base_url: https://api.changenow.io/v2
+  stealthex:
+    api_key: ${STEALTHEX_API_KEY:-XXXX}
+    timeout_seconds: 10
+    base_url: https://api.stealthex.io/v4
+    auth_scheme: Bearer
+  coingecko:
+    api_key: ${COINGECKO_API_KEY:-XXXX}
+    auth_header: x-cg-demo-api-key
+    timeout_seconds: 10
+    base_url: https://api.coingecko.com/api/v3

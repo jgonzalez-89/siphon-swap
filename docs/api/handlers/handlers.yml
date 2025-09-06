@@ -1,0 +1,149 @@
+openapi: 3.0.4
+info:
+  title: Siphon swap API - OpenAPI 3.0
+  description: |-
+    Siphon swap API
+
+  version: 1.0.0
+  contact:
+    name: Siphon Swap
+    url: https://siphon.swap
+    email: contact@siphon.swap
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8080/v1
+  - url: https://api.siphon.swap/v1
+  - url: https://api.siphon.swap/v2
+tags:
+  - name: currencies
+    description: Currencies
+paths:
+  /v1/currencies:
+    get:
+      summary: Get currencies
+      description: Get currencies
+      parameters:
+        - name: name
+          in: query
+          description: Name of the currency
+          required: false
+          schema:
+            type: string
+        - name: popular
+          in: query
+          description: Popular currencies
+          required: false
+          schema:
+            type: boolean
+        - name: active
+          in: query
+          description: Active currencies
+          required: false
+          schema:
+            type: boolean
+        - name: symbols
+          in: query
+          description: Symbols
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Currency'
+
+  /v1/quote:
+    get:
+      summary: Get quote
+      description: Get quote
+      parameters:
+        - name: from
+          in: query
+          description: From currency
+          required: true
+          schema:
+            type: string
+        - name: to
+          in: query
+          description: To currency
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: Amount
+          required: true
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+
+
+components:
+  schemas:
+    Currency:
+      type: object
+      properties:
+        name:
+          type: string
+        symbol:
+          type: string
+        image:
+          type: string
+        available:
+          type: boolean
+        price:
+          type: number
+          format: double
+        addressValidation:
+          type: string
+        networks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Network'
+      required:
+        - name
+        - symbol
+        - image
+        - available
+        - price
+        - addressValidation
+        - networks
+
+    Network:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    Quote:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        amount:
+          type: number
+          format: double
+      required:
+        - from
+        - to
+        - amount

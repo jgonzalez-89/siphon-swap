@@ -1,0 +1,6 @@
+generate:
+  gin-server: true
+  embedded-spec: true
+output-options:
+  user-templates:
+    gin/gin-register.tmpl: ./docs/templates/gin-register.tmpl

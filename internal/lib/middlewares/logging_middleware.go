@@ -2,55 +2,30 @@ package middlewares
 
 import (
 	"cryptoswap/internal/lib/logger"
-	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 // LoggingMiddleware logs the end of the request with detailed information
-func LoggingMiddleware(logger logger.Logger) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			startTime := time.Now()
+func LoggingMiddleware(logger logger.Logger) gin.HandlerFunc {
+	return gin.HandlerFunc(func(ctx *gin.Context) {
+		startTime := time.Now()
+		logger.Infof(ctx, "[%s] %s", ctx.Request.Method, ctx.Request.URL.Path)
+		ctx.Next()
 
-			// Create a custom response writer to capture status code and response size
-			wrappedWriter := &responseWriter{
-				ResponseWriter: w,
-				statusCode:     http.StatusOK, // Default status code
-			}
+		duration := time.Since(startTime)
 
-			next.ServeHTTP(wrappedWriter, r)
-
-			// Don't log static files
-			if strings.HasPrefix(r.URL.Path, "/api") {
-				// Log with appropriate level and detailed information
-				logger.Infof(ctx, "✅ [%s] %s %s - %d ms",
-					r.Method,
-					r.URL.Path,
-					http.StatusText(wrappedWriter.statusCode),
-					time.Since(startTime).Milliseconds())
-			}
-		})
-	}
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code and response size
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-	size       int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	size, err := rw.ResponseWriter.Write(b)
-	rw.size += size
-	return size, err
+		// Don't log static files
+		if strings.HasPrefix(ctx.Request.URL.Path, "/api") {
+			// Log with appropriate level and detailed information
+			logger.Infof(ctx, "[%s] %s %s - %d ms",
+				ctx.Request.Method,
+				ctx.Request.URL.Path,
+				ctx.Writer.Status(),
+				duration.Milliseconds(),
+			)
+		}
+	})
 }

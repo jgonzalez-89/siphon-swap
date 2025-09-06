@@ -1,8 +1,4 @@
-- Refactor de exchanges.
-- Fix sending duplicated currencies
-- Currencies should always be caps
-- Validate wallet
-
-Jose:
- - Buscador html:
-    - Buscar moneda y luego info de las networks de la moneda
+Iker:
+- El daemon que popula la BBDD deberia ser independiente del servicio
+- Habria que hacer un diff entre monedas nuevas y existentes para
+  comprobar si hay que borrar alguna en algun momento.

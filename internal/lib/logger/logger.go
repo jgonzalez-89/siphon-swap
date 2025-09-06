@@ -16,7 +16,12 @@ const (
 	InfoLevel    = logrus.InfoLevel
 )
 
+type LoggerWriter interface {
+	Printf(format string, args ...any)
+}
+
 type Logger interface {
+	LoggerWriter
 	Debug(ctx context.Context, args ...any)
 	Debugf(ctx context.Context, format string, args ...any)
 	Info(ctx context.Context, args ...any)
@@ -113,4 +118,8 @@ func (l *loggerImpl) Fatal(ctx context.Context, args ...any) {
 
 func (l *loggerImpl) Fatalf(ctx context.Context, format string, args ...any) {
 	l.logger.WithContext(ctx).Fatalf(format, args...)
+}
+
+func (l *loggerImpl) Printf(format string, args ...any) {
+	l.logger.Printf(format, args...)
 }

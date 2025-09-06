@@ -5,11 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch",
+            "name": "api",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/main.go"
+            "program": "${workspaceFolder}/cmd/main.go",
+            "env": {
+                "SERVER_PORT": "8080",
+                "CONFIG_PATH": "${workspaceFolder}/config/config.yml",
+                "CHANGENOW_API_KEY": "7d0e5e69f77f27e67004744457aea3a0049b915cff6e5f2a095ad11c62da6454",
+                "STEALTHEX_API_KEY": "86db32f5-f673-4d3e-a0b2-9615701d47f5",
+                "COINGECKO_API_KEY": "CG-t7c61CEQtC5TkfpPraFr3iwW"
+            }
         }
     ]
 }
