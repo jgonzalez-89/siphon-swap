@@ -2,7 +2,7 @@
 server:
   port: ${SERVER_PORT:-8080}
 logger:
-  level: info
+  level: ${LOG_LEVEL:-info}
 database:
   host: ${MYSQL_HOST:-mysql}
   port: ${MYSQL_PORT:-3306}

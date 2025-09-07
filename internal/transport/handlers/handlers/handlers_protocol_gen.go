@@ -19,11 +19,18 @@ type Network struct {
 	Name string `json:"name"`
 }
 
+// NetworkPair defines model for NetworkPair.
+type NetworkPair struct {
+	Network Symbol `json:"network"`
+	Symbol  Symbol `json:"symbol"`
+}
+
 // Quote defines model for Quote.
 type Quote struct {
-	Amount float64 `json:"amount"`
-	From   string  `json:"from"`
-	To     string  `json:"to"`
+	Amount float64     `json:"amount"`
+	From   NetworkPair `json:"from"`
+	Route  string      `json:"route"`
+	To     NetworkPair `json:"to"`
 }
 
 // Symbol defines model for Symbol.
@@ -44,13 +51,13 @@ type GetV1CurrenciesParams struct {
 	Symbols *[]string `form:"symbols,omitempty" json:"symbols,omitempty"`
 }
 
-// GetV1QuoteParams defines parameters for GetV1Quote.
-type GetV1QuoteParams struct {
+// GetV1QuotesParams defines parameters for GetV1Quotes.
+type GetV1QuotesParams struct {
 	// From From currency
-	From Symbol `form:"from" json:"from"`
+	From NetworkPair `form:"from" json:"from"`
 
 	// To To currency
-	To Symbol `form:"to" json:"to"`
+	To NetworkPair `form:"to" json:"to"`
 
 	// Amount Amount
 	Amount float64 `form:"amount" json:"amount"`

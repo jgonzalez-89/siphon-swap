@@ -16,6 +16,7 @@ type CurrencyFetcher interface {
 
 type CurrencyRepository interface {
 	GetCurrencies(ctx context.Context, filters models.Filters) ([]models.Currency, *apierrors.ApiError)
+	GetCurrenciesByPairs(ctx context.Context, pairs ...models.NetworkPair) ([]models.Currency, *apierrors.ApiError)
 	InsertCurrencies(ctx context.Context, currencies []models.Currency) *apierrors.ApiError
 	UpdatePrices(ctx context.Context, currencies []models.Currency) *apierrors.ApiError
 }

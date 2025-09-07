@@ -27,3 +27,19 @@ func toNetworks(networks []models.NetworkPair) []Network {
 		}
 	})
 }
+
+func toPair(pair NetworkPair) models.NetworkPair {
+	return models.NetworkPair{
+		Symbol:  pair.Symbol,
+		Network: pair.Network,
+	}
+}
+
+func toFilter(filter GetV1CurrenciesParams) models.Filters {
+	return models.Filters{
+		Name:    filter.Name,
+		Popular: filter.Popular,
+		Active:  filter.Active,
+		Symbols: filter.Symbols,
+	}
+}

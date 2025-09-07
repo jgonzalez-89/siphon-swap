@@ -8,12 +8,14 @@ import (
 	"cryptoswap/internal/services/models"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/samber/lo"
 )
 
 const (
 	stealthEx = "StealthEX"
+	limit     = 250
 )
 
 type stealthexClientImpl struct {
@@ -35,16 +37,41 @@ func (s *stealthexClientImpl) GetName() string {
 
 func (s *stealthexClientImpl) GetCurrencies(ctx context.Context,
 ) ([]models.Currency, *apierrors.ApiError) {
-	request := s.factory.NewClient(ctx).Get
-	apiCurrencies, err := httpclient.HandleRequest[[]CurrencyResponse](
-		request, "/currencies", http.StatusOK)
-	if err != nil {
-		return nil, apierrors.NewApiError(apierrors.InternalServerError, err)
+
+	count := 0
+	currs := make([]CurrencyResponse, 0)
+	for {
+		offset := getOffset(count)
+		request := s.factory.NewClient(ctx).
+			WithQueryParams("limit", limit).
+			WithQueryParams("offset", offset).Get
+		apiCurrencies, err := httpclient.HandleRequest[[]CurrencyResponse](
+			request, "/currencies", http.StatusOK)
+
+		if len(apiCurrencies) == 0 {
+			break
+		}
+
+		if err != nil {
+			s.logger.Error(ctx, "error fetching currencies", "error", err)
+			break
+		}
+
+		count++
+		time.Sleep(100 * time.Millisecond)
+		currs = append(currs, apiCurrencies...)
 	}
 
-	return lo.Map(apiCurrencies, func(curr CurrencyResponse, _ int) models.Currency {
+	return lo.Map(currs, func(curr CurrencyResponse, _ int) models.Currency {
 		return curr.ToCurrency()
 	}), nil
+}
+
+func getOffset(count int) int {
+	if count == 0 {
+		return 0
+	}
+	return count*limit + 1
 }
 
 func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to string,
@@ -55,7 +82,7 @@ func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to string,
 		WithQueryParams("fixed", false).
 		Get
 	quote, err := httpclient.HandleRequest[QuoteResponse](
-		request, fmt.Sprintf("/estimate/%s/%s", from, to), http.StatusOK)
+		request, "/rates/estimated-amount", http.StatusOK)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching quote: %w", err)
 	}

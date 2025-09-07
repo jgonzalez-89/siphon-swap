@@ -4,7 +4,6 @@ import (
 	"cryptoswap/internal/lib/api"
 	"cryptoswap/internal/lib/logger"
 	"cryptoswap/internal/services/currencies"
-	"cryptoswap/internal/services/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +25,7 @@ type handlersImpl struct {
 }
 
 func (h *handlersImpl) GetV1Currencies(c *gin.Context, params GetV1CurrenciesParams) {
-	currencies, err := h.service.GetCurrencies(c, models.Filters(params))
+	currencies, err := h.service.GetCurrencies(c, toFilter(params))
 	if err != nil {
 		h.handler.Error(c, err)
 		return
@@ -35,8 +34,8 @@ func (h *handlersImpl) GetV1Currencies(c *gin.Context, params GetV1CurrenciesPar
 	h.handler.OK(c, http.StatusOK, toCurrencies(currencies))
 }
 
-func (h *handlersImpl) GetV1Quote(c *gin.Context, params GetV1QuoteParams) {
-	quote, err := h.service.GetQuote(c, params.From, params.To, params.Amount)
+func (h *handlersImpl) GetV1Quotes(c *gin.Context, params GetV1QuotesParams) {
+	quote, err := h.service.GetQuote(c, toPair(params.From), toPair(params.To), params.Amount)
 	if err != nil {
 		h.handler.Error(c, err)
 		return

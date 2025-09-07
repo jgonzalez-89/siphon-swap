@@ -23,7 +23,7 @@ func (f *Filters) ToMap() map[string]any {
 		cast["active"] = *f.Active
 	}
 	if f.Symbols != nil {
-		cast["symbol"] = *f.Symbols
+		cast["symbols"] = *f.Symbols
 	}
 	return cast
 }

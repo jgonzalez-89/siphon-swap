@@ -2,17 +2,20 @@ package currencies
 
 import (
 	"context"
+	"fmt"
+	"strings"
+
+	"github.com/samber/lo"
+
 	"cryptoswap/internal/lib/apierrors"
 	"cryptoswap/internal/lib/logger"
 	"cryptoswap/internal/services/interfaces"
 	"cryptoswap/internal/services/models"
-	"fmt"
-	"strings"
 )
 
 type CurrencyService interface {
 	GetCurrencies(ctx context.Context, filters models.Filters) ([]models.Currency, *apierrors.ApiError)
-	GetQuote(ctx context.Context, from, to string, amount float64) (models.Quote, *apierrors.ApiError)
+	GetQuote(ctx context.Context, from, to models.NetworkPair, amount float64) (models.Quote, *apierrors.ApiError)
 }
 
 func NewCurrencyService(logger logger.Logger, db interfaces.CurrencyRepository) *currencyService {
@@ -40,11 +43,11 @@ func (s *currencyService) GetCurrencies(ctx context.Context, filters models.Filt
 	return currencies, nil
 }
 
-func (s *currencyService) GetQuote(ctx context.Context, from, to string,
+func (s *currencyService) GetQuote(ctx context.Context, from, to models.NetworkPair,
 	amount float64) (models.Quote, *apierrors.ApiError) {
 	s.logger.Infof(ctx, "Getting quote for %s to %s with amount %f", from, to, amount)
 
-	err := s.doSymbolsExist(ctx, from, to)
+	err := s.doPairsExist(ctx, from, to)
 	if err != nil {
 		return models.Quote{}, err
 	}
@@ -52,26 +55,36 @@ func (s *currencyService) GetQuote(ctx context.Context, from, to string,
 	return models.Quote{}, nil
 }
 
-func (cs *currencyService) doSymbolsExist(ctx context.Context, from, to string) *apierrors.ApiError {
-	symbols := []string{from, to}
-	currencies, err := cs.db.GetCurrencies(ctx, models.Filters{Symbols: &symbols})
+func (cs *currencyService) doPairsExist(ctx context.Context, from, to models.NetworkPair) *apierrors.ApiError {
+	currencies, err := cs.db.GetCurrenciesByPairs(ctx, from, to)
 	if err != nil {
 		cs.logger.Errorf(ctx, "Error getting currencies: %+v", err)
 		return err
 	}
 
-	// Check if any of the symbols don't exist and get the not found string symbols
-	notFoundSymbols := []string{}
+	// Grab all networks:
+	fetchedNetworkLookup := map[models.NetworkPair]bool{}
 	for _, currency := range currencies {
-		if currency.Symbol == from || currency.Symbol == to {
-			continue
+		networks := currency.GetNetworks()
+		for _, network := range networks {
+			fetchedNetworkLookup[network] = true
 		}
-		notFoundSymbols = append(notFoundSymbols, currency.Symbol)
 	}
 
-	if len(notFoundSymbols) > 0 {
-		return apierrors.NewApiError(apierrors.NotFoundError,
-			fmt.Errorf("symbols %s not found", strings.Join(notFoundSymbols, ", ")))
+	// Check if any of the symbols don't exist and get the not found string symbols
+	notFoundPairs := []models.NetworkPair{}
+	for _, network := range []models.NetworkPair{from, to} {
+		if _, ok := fetchedNetworkLookup[network]; !ok {
+			notFoundPairs = append(notFoundPairs, network)
+		}
+	}
+
+	if len(notFoundPairs) > 0 {
+		notFoundPairsStrings := lo.Map(notFoundPairs, func(pair models.NetworkPair, _ int) string {
+			return pair.String()
+		})
+		return apierrors.NewApiError(apierrors.BadRequestError,
+			fmt.Errorf("network %s not found", strings.Join(notFoundPairsStrings, ", ")))
 	}
 
 	return nil

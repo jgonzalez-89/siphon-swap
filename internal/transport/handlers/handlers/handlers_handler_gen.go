@@ -24,8 +24,8 @@ type ServerInterface interface {
 	// (GET /v1/currencies)
 	GetV1Currencies(c *gin.Context, params GetV1CurrenciesParams)
 	// Get quote
-	// (GET /v1/quote)
-	GetV1Quote(c *gin.Context, params GetV1QuoteParams)
+	// (GET /v1/quotes)
+	GetV1Quotes(c *gin.Context, params GetV1QuotesParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -87,13 +87,13 @@ func (siw *ServerInterfaceWrapper) GetV1Currencies(c *gin.Context) {
 	siw.Handler.GetV1Currencies(c, params)
 }
 
-// GetV1Quote operation middleware
-func (siw *ServerInterfaceWrapper) GetV1Quote(c *gin.Context) {
+// GetV1Quotes operation middleware
+func (siw *ServerInterfaceWrapper) GetV1Quotes(c *gin.Context) {
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetV1QuoteParams
+	var params GetV1QuotesParams
 
 	// ------------- Required query parameter "from" -------------
 
@@ -147,7 +147,7 @@ func (siw *ServerInterfaceWrapper) GetV1Quote(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetV1Quote(c, params)
+	siw.Handler.GetV1Quotes(c, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -182,26 +182,27 @@ func RegisterHandlersWithOptions(router gin.IRouter, siAny any, optionsAny any) 
 
 	router.GET(options.BaseURL+"/v1/currencies", wrapper.GetV1Currencies)
 
-	router.GET(options.BaseURL+"/v1/quote", wrapper.GetV1Quote)
+	router.GET(options.BaseURL+"/v1/quotes", wrapper.GetV1Quotes)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/6xVS2/bMAz+K4HW21zbXXfofFpRYEMxrA+06KXIAMZhEnXWI5ScIivy3wdJfiV2mg7d",
-	"zRbJj6T48dMLy5XQSqK0hmUvzOQLFOA/L0oilPnafWtSGsly9BaYTgmNeYCCT8FyJd2hXWtkGTOWuJyz",
-	"TcRgBbyASYEd60SpAkE6Mxcwx8FACWKPAe2zot++Bm5R+I8jwhnL2IekbSSpukiuQoCLrcCACNbuXxPP",
-	"fZaZIgGWZWyqSlds4ypLMUFyvmYtJqoYKGkTMcJlyQmnLHsMhTfudYvdm6jzRgN32Olv3BShJk+YW1dE",
-	"3UtvGnuua6i2IdzbUlkcmLFQpbRvvKAZKTE4MasOV+aDvWtUZx2q864ZggZrkSTL2K9HOP6THn8Zfzxq",
-	"y2rSOJLJma8gV9JC7ttBAbxgWX301XC9UDI2z6BZzT125w9Hd+GwJBewsFabLEm6AZuITdHkxHVYgzrQ",
-	"GUfnN5csYgXPURpsJ8V+Xt73QJVGaVRJOcaK5kkVZBLn6+6R2wL78KPj0bVG6b5O45RFbIVkQiEncRqn",
-	"LtQhg+YsY6dxGn92FAS78DNOVidJHra8mvoc/R1t9/Qd7ajj5iHJc/ZyGswPJxdduwYCgRbJsOxxF+0K",
-	"BI7UbGQXWKOu3a4427JEWrdTqPfJb/OhXa/4sdlEuxlvlC4LoO0ehvLp4LiVcle4+vDnueUrPIwO3u8f",
-	"wUNX+yBNY20xG2HsL+OWBG7Gbg2NVo5nzv9TmtargmHzQeuC537SyZMJMj+Q6LWpNI9IP39vd65/eG0w",
-	"pRBA6z7xnNFRdlkr1l62Bo9Bot5Wplc5+o2UOETOSrZaJbNU4vvJeq8OJfZC+b/Tngfh3cPc2rg/a/+R",
-	"EFxyUQqWpb0H493Ue63HMOC30mvZehukVU2HVpyzJClUDsVCGZudpWdOU192xBs0j7deBfd+wXyIWVs6",
-	"WV1vl+Ljzd8AAAD//0QQxVKSCQAA",
+	"H4sIAAAAAAAC/7RVSW/bOhD+KwZfbs+RlJd3SHVqEKBFUDQLHOQSuMBYHttMxcVDyoEb+L8XJC3JWrwE",
+	"RW+2Zuabhd98884yJbSSKK1h6Tsz2QIF+J83BRHKbO1+a1IayXL0FphOCY15hpxPwXIl3Ue71shSZixx",
+	"OWebIYMV8BwmOe5YJ0rlCNKZuYA59gZKEHsMaN8U/fQ1cIvC/zgjnLGU/RPXjcTbLuK7EOBit2BABGv3",
+	"XxPPfJaZIgGWpWyqClds5SoLMUFyvmYtJirvKWkzZITLghNOWfoSCq/cyxZ3J1HmHfbMcKe/cVWEmrxi",
+	"Zl0RZS+d19gzrr7aDuA+AKce7DrpoTmPQseNUZ3i36qxGlyZtq/ex0JZ7OGkUIW0Jz7ojJQ4kTt+Lq5O",
+	"Vdh+Vlr1IahWzwF3W5IHG5a99HU/quarwVokyVL24wXOfyXnn8b/ntXNVjRwqyZnvsZMSQuZHxIK4DlL",
+	"y0+fDdcLJSPzBpqVG8hG/uNgFD4W5AIW1mqTxvFuwGbIpmgy4jqIQRnojIPrh1s2ZDnPUBqs+cq+3z51",
+	"QJVGaVRBGUaK5vE2yMTO102a2xy78IPzwb1G6X5dRgkbshWSCYVcREmUuFCHDJqzlF1GSfS/W0SwC8+c",
+	"eHURZ0Hrtlyao59Rs6evaAc7bh6S/ObeToP5+eJm166BQKBFMix9aaPdgcCBmg3sAkvUtVMMZ1sWSOv6",
+	"FUpV8WQ6fbPaGR+ULnKgZg99+XRwbKRsy3cX/jqzfIXH0cH7fRA8dLUP0lTWGrM6D911bRyCzdito9HK",
+	"8cz5/5ck5apg0BPQOueZf+n41YRj15Po0KtUp7Sbv7M799+8RphCCKB1l3jO6Ci7dDp4mK7epZ+pjyH6",
+	"CEu/kBLH6LkVrlrTLBV4Kl1bytjO/6SOZfd6+VdyXwcR3sPi0rg/dfcMCS65KARLk85J+mMaHmo0XMxT",
+	"qbasvQ3SqiRGLdRpHOcqg3yhjE2vkiunr+8tIQfNo8aFcLcM5n0ca2jmdry7dB9vfgcAAP//4tMnVaQK",
+	"AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

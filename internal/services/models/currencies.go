@@ -11,8 +11,8 @@ func NewCurrencies(currencies ...Currency) Currencies {
 	for _, currency := range currencies {
 		symbol := currency.GetLowerSymbol()
 		network := currency.GetFirstNetwork().Network
-		if currency, ok := currencyLookup[symbol]; ok {
-			currencyLookup[symbol] = currency.WithNetworks(network).
+		if lookupCurr, ok := currencyLookup[symbol]; ok {
+			currencyLookup[symbol] = lookupCurr.WithNetworks(network).
 				WithAddressValidation(currency.AddressValidation)
 			continue
 		}

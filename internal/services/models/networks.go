@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/samber/lo"
@@ -16,6 +17,10 @@ func newPair(symbol, network string) NetworkPair {
 type NetworkPair struct {
 	Symbol  string
 	Network string
+}
+
+func (n NetworkPair) String() string {
+	return fmt.Sprintf("%s-%s", n.Symbol, n.Network)
 }
 
 func newNetworks() Networks {

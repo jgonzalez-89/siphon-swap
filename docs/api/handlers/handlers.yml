@@ -60,7 +60,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Currency'
 
-  /v1/quote:
+  /v1/quotes:
     get:
       summary: Get quote
       description: Get quote
@@ -70,13 +70,13 @@ paths:
           description: From currency
           required: true
           schema:
-            $ref: '#/components/schemas/Symbol'
+            $ref: '#/components/schemas/NetworkPair'
         - name: to
           in: query
           description: To currency
           required: true
           schema:
-            $ref: '#/components/schemas/Symbol'
+            $ref: '#/components/schemas/NetworkPair'
         - name: amount
           in: query
           description: Amount
@@ -99,6 +99,17 @@ components:
     Symbol:
       type: string
       pattern: '^[a-z0-9]+$'
+
+    NetworkPair:
+      type: object
+      properties:
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+        network:
+          $ref: '#/components/schemas/Symbol'
+      required:
+        - symbol
+        - network
 
     Currency:
       type: object
@@ -141,13 +152,16 @@ components:
       type: object
       properties:
         from:
-          type: string
+          $ref: '#/components/schemas/NetworkPair'
         to:
+          $ref: '#/components/schemas/NetworkPair'
+        route:
           type: string
         amount:
           type: number
           format: double
       required:
+        - route
         - from
         - to
         - amount

@@ -70,9 +70,6 @@ func main() {
 
 	currencyService := currService.NewCurrencyService(fact.NewLogger("currency_service"), currDB)
 
-	// Start
-	go currencyManager.Start(ctx)
-
 	// Handlers:
 	currencyHandler := currHandlers.NewHandlers(fact.NewLogger("handlers"),
 		api.NewResponseManager(), currencyService)
@@ -89,6 +86,8 @@ func main() {
 			middlewares.LoggingMiddleware(middlewareLogger)).
 		Build()
 
+	// Run processes:
+	go currencyManager.Start(ctx)
 	mainLogger.Printf("Starting server on address: %s", httpServer.Addr)
 	if err := httpServer.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "error starting server: %v", err)

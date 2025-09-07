@@ -41,6 +41,28 @@ func (cr *currenciesRepository) GetCurrencies(ctx context.Context,
 	return entities.ToModel(), nil
 }
 
+func (cr *currenciesRepository) GetCurrenciesByPairs(ctx context.Context,
+	pairs ...models.NetworkPair) ([]models.Currency, *apierrors.ApiError) {
+	if len(pairs) == 0 {
+		return []models.Currency{}, nil
+	}
+
+	symbols := cr.db.Model(&CurrencyNetwork{}).
+		Select("symbol").
+		Where("(symbol, network) IN (?,?)", pairs)
+
+	entities := Currencies{}
+	if err := cr.db.WithContext(ctx).
+		Preload("Networks").
+		Where("symbol IN (?)", symbols).
+		Find(&entities).
+		Error; err != nil {
+		return nil, apierrors.NewApiError(apierrors.InternalServerError, err)
+	}
+
+	return entities.ToModel(), nil
+}
+
 func (cr *currenciesRepository) InsertCurrencies(ctx context.Context, currencies []models.Currency,
 ) *apierrors.ApiError {
 	cr.logger.Infof(ctx, "Inserting %d currencies into the database", len(currencies))
