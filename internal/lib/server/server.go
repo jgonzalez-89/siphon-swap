@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/gin-middleware"
 )
