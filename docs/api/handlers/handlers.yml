@@ -29,7 +29,7 @@ paths:
           description: Name of the currency
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/Symbol'
         - name: popular
           in: query
           description: Popular currencies
@@ -70,13 +70,13 @@ paths:
           description: From currency
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/Symbol'
         - name: to
           in: query
           description: To currency
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/Symbol'
         - name: amount
           in: query
           description: Amount
@@ -96,6 +96,10 @@ paths:
 
 components:
   schemas:
+    Symbol:
+      type: string
+      pattern: '^[a-z0-9]+$'
+
     Currency:
       type: object
       properties:

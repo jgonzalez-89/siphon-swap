@@ -18,8 +18,6 @@ import (
 	currHandlers "cryptoswap/internal/transport/handlers/handlers"
 	"time"
 
-	ginmiddleware "github.com/oapi-codegen/gin-middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -79,26 +77,16 @@ func main() {
 	currencyHandler := currHandlers.NewHandlers(fact.NewLogger("handlers"),
 		api.NewResponseManager(), currencyService)
 
-	// Validators:
-	currSpec, err := currHandlers.GetSwagger()
-	if err != nil {
-		mainLogger.Fatalf(ctx, "error getting swagger spec: %v", err)
-	}
-
 	// Server:
 	router := gin.New()
+	handlerFactory := server.NewHandlerFactory(ctx, mainLogger)
 	serverBuilder := server.NewServerBuilder(router, server.ServerConfig(cfg.Server))
 
 	middlewareLogger := fact.NewLogger("middlewares")
 	httpServer := serverBuilder.
-		WithHandlers(server.Handler{
-			Handler:      currencyHandler,
-			Options:      currHandlers.GinServerOptions{},
-			RegisterFunc: currHandlers.RegisterHandlersWithOptions,
-		}).
+		WithHandlers(handlerFactory.New(currencyHandler, currHandlers.RegisterHandlers, currHandlers.GetSwagger)).
 		WithMiddlewares(middlewares.CorsMiddleware,
-			middlewares.LoggingMiddleware(middlewareLogger),
-			ginmiddleware.OapiRequestValidator(currSpec)).
+			middlewares.LoggingMiddleware(middlewareLogger)).
 		Build()
 
 	mainLogger.Printf("Starting server on address: %s", httpServer.Addr)

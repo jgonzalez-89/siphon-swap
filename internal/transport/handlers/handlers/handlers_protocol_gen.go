@@ -26,10 +26,13 @@ type Quote struct {
 	To     string  `json:"to"`
 }
 
+// Symbol defines model for Symbol.
+type Symbol = string
+
 // GetV1CurrenciesParams defines parameters for GetV1Currencies.
 type GetV1CurrenciesParams struct {
 	// Name Name of the currency
-	Name *string `form:"name,omitempty" json:"name,omitempty"`
+	Name *Symbol `form:"name,omitempty" json:"name,omitempty"`
 
 	// Popular Popular currencies
 	Popular *bool `form:"popular,omitempty" json:"popular,omitempty"`
@@ -44,10 +47,10 @@ type GetV1CurrenciesParams struct {
 // GetV1QuoteParams defines parameters for GetV1Quote.
 type GetV1QuoteParams struct {
 	// From From currency
-	From string `form:"from" json:"from"`
+	From Symbol `form:"from" json:"from"`
 
 	// To To currency
-	To string `form:"to" json:"to"`
+	To Symbol `form:"to" json:"to"`
 
 	// Amount Amount
 	Amount float64 `form:"amount" json:"amount"`

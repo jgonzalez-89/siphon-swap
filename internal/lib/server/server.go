@@ -3,16 +3,10 @@ package server
 import (
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/gin-middleware"
 )
-
-type RegisterFunc func(router gin.IRouter, handler any, options any)
-
-type Handler struct {
-	Handler      any
-	Options      any
-	RegisterFunc RegisterFunc
-}
 
 type ServerConfig struct {
 	Port string
@@ -49,7 +43,9 @@ func (b *serverBuilder) Build() *http.Server {
 	}
 
 	for _, handler := range b.handlers {
-		handler.RegisterFunc(b.router, handler.Handler, handler.Options)
+		r := b.router.Group("/")
+		r.Use(ginmiddleware.OapiRequestValidator(handler.Swagger))
+		handler.RegisterFunc(b.router.Group("/"), handler.Handler)
 	}
 
 	return &http.Server{
