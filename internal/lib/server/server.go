@@ -44,7 +44,7 @@ func (b *serverBuilder) Build() *http.Server {
 	for _, handler := range b.handlers {
 		r := b.router.Group("/")
 		r.Use(ginmiddleware.OapiRequestValidator(handler.Swagger))
-		handler.RegisterFunc(b.router.Group("/"), handler.Handler)
+		handler.RegisterFunc(r, handler.Handler)
 	}
 
 	return &http.Server{
