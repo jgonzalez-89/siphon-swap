@@ -1,6 +1,6 @@
 module cryptoswap
 
-go 1.23.9
+go 1.24
 
 require (
 	github.com/Mth-Ryan/go-yaml-cfg v0.2.0
@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/icamacho1/Primitives v0.1.7
 	github.com/joho/godotenv v1.5.1
-	github.com/oapi-codegen/nethttp-middleware v1.1.2
+	github.com/oapi-codegen/gin-middleware v1.0.2
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/samber/lo v1.51.0
 	github.com/sirupsen/logrus v1.9.3

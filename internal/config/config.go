@@ -17,7 +17,7 @@ type Logger struct {
 
 type Database struct {
 	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
+	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Schema   string `yaml:"schema"`

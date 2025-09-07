@@ -15,8 +15,10 @@ import (
 	"cryptoswap/internal/repository/http/stealthex"
 	currService "cryptoswap/internal/services/currencies"
 	"cryptoswap/internal/services/daemon"
-	"cryptoswap/internal/transport/handlers/handlers"
+	currHandlers "cryptoswap/internal/transport/handlers/handlers"
 	"time"
+
+	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,26 +76,32 @@ func main() {
 	go currencyManager.Start(ctx)
 
 	// Handlers:
-	currencyHandler := handlers.NewHandlers(fact.NewLogger("handlers"), api.NewResponseManager(), currencyService)
+	currencyHandler := currHandlers.NewHandlers(fact.NewLogger("handlers"),
+		api.NewResponseManager(), currencyService)
+
+	// Validators:
+	currSpec, err := currHandlers.GetSwagger()
+	if err != nil {
+		mainLogger.Fatalf(ctx, "error getting swagger spec: %v", err)
+	}
 
 	// Server:
-	router := gin.Default()
-	serverBuilder := server.NewServerBuilder(router, server.ServerConfig{
-		Port: cfg.Server.Port,
-	})
+	router := gin.New()
+	serverBuilder := server.NewServerBuilder(router, server.ServerConfig(cfg.Server))
 
 	middlewareLogger := fact.NewLogger("middlewares")
 	httpServer := serverBuilder.
 		WithHandlers(server.Handler{
 			Handler:      currencyHandler,
-			Options:      handlers.GinServerOptions{},
-			RegisterFunc: handlers.RegisterHandlersWithOptions,
+			Options:      currHandlers.GinServerOptions{},
+			RegisterFunc: currHandlers.RegisterHandlersWithOptions,
 		}).
 		WithMiddlewares(middlewares.CorsMiddleware,
-			middlewares.LoggingMiddleware(middlewareLogger)).
+			middlewares.LoggingMiddleware(middlewareLogger),
+			ginmiddleware.OapiRequestValidator(currSpec)).
 		Build()
 
-	mainLogger.Printf("Starting server on port %s", cfg.Server.Port)
+	mainLogger.Printf("Starting server on address: %s", httpServer.Addr)
 	if err := httpServer.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "error starting server: %v", err)
 	}

@@ -22,6 +22,7 @@ func NewServerBuilder(router *gin.Engine, config ServerConfig) *serverBuilder {
 	return &serverBuilder{
 		handlers: []Handler{},
 		router:   router,
+		config:   config,
 	}
 }
 

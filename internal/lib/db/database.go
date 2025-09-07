@@ -12,14 +12,14 @@ import (
 
 type Config struct {
 	Host     string
-	Port     int
+	Port     string
 	User     string
 	Password string
 	Schema   string
 }
 
 func NewGorm(config Config, logger logger.Logger) (*gorm.DB, error) {
-	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.User, config.Password, config.Host,
+	uri := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.User, config.Password, config.Host,
 		config.Port, config.Schema)
 
 	return gorm.Open(mysql.Open(uri), &gorm.Config{

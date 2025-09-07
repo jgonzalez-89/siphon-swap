@@ -4,10 +4,10 @@ server:
 logger:
   level: info
 database:
-  host: mysql
-  port: 3306
-  user: root
-  password: admin123
+  host: ${MYSQL_HOST:-mysql}
+  port: ${MYSQL_PORT:-3306}
+  user: ${MYSQL_USER:-root}
+  password: ${MYSQL_PASSWORD:-admin123}
   schema: cryptoswap
 exchanges:
   change_now:

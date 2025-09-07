@@ -13,9 +13,8 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:8080/v1
-  - url: https://api.siphon.swap/v1
-  - url: https://api.siphon.swap/v2
+  - url: http://localhost:8080
+  - url: https://api.siphon.swap
 tags:
   - name: currencies
     description: Currencies
@@ -85,6 +84,7 @@ paths:
           schema:
             type: number
             format: double
+            minimum: 0
       responses:
         '200':
           description: OK
