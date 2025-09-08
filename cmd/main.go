@@ -87,7 +87,10 @@ func main() {
 		Build()
 
 	// Run processes:
-	go currencyManager.Start(ctx)
+	if false {
+		go currencyManager.Start(ctx)
+	}
+
 	mainLogger.Printf("Starting server on address: %s", httpServer.Addr)
 	if err := httpServer.ListenAndServe(); err != nil {
 		mainLogger.Fatalf(ctx, "error starting server: %v", err)

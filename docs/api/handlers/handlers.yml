@@ -65,18 +65,30 @@ paths:
       summary: Get quote
       description: Get quote
       parameters:
-        - name: from
+        - name: fromSymbol
           in: query
           description: From currency
           required: true
           schema:
-            $ref: '#/components/schemas/NetworkPair'
-        - name: to
+            $ref: '#/components/schemas/Symbol'
+        - name: fromNetwork
+          in: query
+          description: From network
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: toSymbol
           in: query
           description: To currency
           required: true
           schema:
-            $ref: '#/components/schemas/NetworkPair'
+            $ref: '#/components/schemas/Symbol'
+        - name: toNetwork
+          in: query
+          description: To network
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
         - name: amount
           in: query
           description: Amount

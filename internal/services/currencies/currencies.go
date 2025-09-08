@@ -26,8 +26,9 @@ func NewCurrencyService(logger logger.Logger, db interfaces.CurrencyRepository) 
 }
 
 type currencyService struct {
-	logger logger.Logger
-	db     interfaces.CurrencyRepository
+	logger    logger.Logger
+	db        interfaces.CurrencyRepository
+	exchanges map[string]interfaces.CurrencyFetcher
 }
 
 func (s *currencyService) GetCurrencies(ctx context.Context, filters models.Filters,

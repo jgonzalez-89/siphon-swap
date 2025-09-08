@@ -55,6 +55,12 @@ func (cm *currencyManager) runEvery(ctx context.Context, interval time.Duration,
 }
 
 func (cm *currencyManager) storeCurrencies(ctx context.Context) {
+	existingCurrencies, err := cm.repository.GetCurrencies(ctx, models.Filters{})
+	if err != nil {
+		cm.logger.Errorf(ctx, "Error getting currencies: %v", err)
+		return
+	}
+
 	currencies := &[]models.Currency{}
 	wg := &sync.WaitGroup{}
 	for _, currencyFetcher := range cm.currencyFetchers {
@@ -73,7 +79,8 @@ func (cm *currencyManager) storeCurrencies(ctx context.Context) {
 	wg.Wait()
 	cm.logger.Infof(ctx, "Fetched %d currencies", len(*currencies))
 
-	manager := models.NewCurrencies(*currencies...)
+	allCurrencies := append(existingCurrencies, *currencies...)
+	manager := models.NewCurrencies(allCurrencies...)
 	if err := cm.repository.InsertCurrencies(ctx, manager.GetCurrencies()); err != nil {
 		cm.logger.Errorf(ctx, "Error inserting currencies: %v", err)
 	}

@@ -25,3 +25,9 @@ func toCurrenciesEntity(currencies []models.Currency) Currencies {
 		}
 	})
 }
+
+func toPairSlice(currencies []models.NetworkPair) [][]string {
+	return lo.Map(currencies, func(currency models.NetworkPair, _ int) []string {
+		return []string{currency.Symbol, currency.Network}
+	})
+}

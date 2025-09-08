@@ -49,7 +49,7 @@ func (cr *currenciesRepository) GetCurrenciesByPairs(ctx context.Context,
 
 	symbols := cr.db.Model(&CurrencyNetwork{}).
 		Select("symbol").
-		Where("(symbol, network) IN (?,?)", pairs)
+		Where("(symbol, network) IN ?", toPairSlice(pairs))
 
 	entities := Currencies{}
 	if err := cr.db.WithContext(ctx).

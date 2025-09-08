@@ -12,6 +12,7 @@ type CashFetcher interface {
 
 type CurrencyFetcher interface {
 	GetCurrencies(ctx context.Context) ([]models.Currency, *apierrors.ApiError)
+	GetQuote(ctx context.Context, from, to models.NetworkPair, amount float64) (models.Quote, *apierrors.ApiError)
 }
 
 type CurrencyRepository interface {

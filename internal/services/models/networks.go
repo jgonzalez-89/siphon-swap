@@ -15,8 +15,8 @@ func newPair(symbol, network string) NetworkPair {
 }
 
 type NetworkPair struct {
-	Symbol  string
-	Network string
+	Symbol  string `json:"symbol"`
+	Network string `json:"network"`
 }
 
 func (n NetworkPair) String() string {

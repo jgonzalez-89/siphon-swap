@@ -53,11 +53,17 @@ type GetV1CurrenciesParams struct {
 
 // GetV1QuotesParams defines parameters for GetV1Quotes.
 type GetV1QuotesParams struct {
-	// From From currency
-	From NetworkPair `form:"from" json:"from"`
+	// FromSymbol From currency
+	FromSymbol Symbol `form:"fromSymbol" json:"fromSymbol"`
 
-	// To To currency
-	To NetworkPair `form:"to" json:"to"`
+	// FromNetwork From network
+	FromNetwork Symbol `form:"fromNetwork" json:"fromNetwork"`
+
+	// ToSymbol To currency
+	ToSymbol Symbol `form:"toSymbol" json:"toSymbol"`
+
+	// ToNetwork To network
+	ToNetwork Symbol `form:"toNetwork" json:"toNetwork"`
 
 	// Amount Amount
 	Amount float64 `form:"amount" json:"amount"`

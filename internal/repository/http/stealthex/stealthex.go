@@ -5,8 +5,9 @@ import (
 	"cryptoswap/internal/lib/apierrors"
 	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
+	"cryptoswap/internal/repository/http/stealthex/entities"
+	"cryptoswap/internal/services/interfaces"
 	"cryptoswap/internal/services/models"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,6 +18,8 @@ const (
 	stealthEx = "StealthEX"
 	limit     = 250
 )
+
+var _ interfaces.CurrencyFetcher = &stealthexClientImpl{}
 
 type stealthexClientImpl struct {
 	factory httpclient.Factory
@@ -39,13 +42,13 @@ func (s *stealthexClientImpl) GetCurrencies(ctx context.Context,
 ) ([]models.Currency, *apierrors.ApiError) {
 
 	count := 0
-	currs := make([]CurrencyResponse, 0)
+	currs := make([]entities.CurrencyResponse, 0)
 	for {
 		offset := getOffset(count)
 		request := s.factory.NewClient(ctx).
 			WithQueryParams("limit", limit).
 			WithQueryParams("offset", offset).Get
-		apiCurrencies, err := httpclient.HandleRequest[[]CurrencyResponse](
+		apiCurrencies, err := httpclient.HandleRequest[[]entities.CurrencyResponse](
 			request, "/currencies", http.StatusOK)
 
 		if len(apiCurrencies) == 0 {
@@ -62,7 +65,7 @@ func (s *stealthexClientImpl) GetCurrencies(ctx context.Context,
 		currs = append(currs, apiCurrencies...)
 	}
 
-	return lo.Map(currs, func(curr CurrencyResponse, _ int) models.Currency {
+	return lo.Map(currs, func(curr entities.CurrencyResponse, _ int) models.Currency {
 		return curr.ToCurrency()
 	}), nil
 }
@@ -74,59 +77,19 @@ func getOffset(count int) int {
 	return count*limit + 1
 }
 
-func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to string,
-	amount float64) (*models.Quote, error) {
+func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to models.NetworkPair,
+	amount float64) (models.Quote, *apierrors.ApiError) {
 
+	payload := entities.NewQuotePayload(from, to, amount)
 	request := s.factory.NewClient(ctx).
-		WithQueryParams("amount", amount).
-		WithQueryParams("fixed", false).
-		Get
-	quote, err := httpclient.HandleRequest[QuoteResponse](
-		request, "/rates/estimated-amount", http.StatusOK)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching quote: %w", err)
-	}
-
-	return quote.ToQuote(from, to, amount), nil
-}
-
-// GetMinAmount obtiene el monto mínimo para un par
-func (s *stealthexClientImpl) GetMinAmount(ctx context.Context, from, to string) (float64, error) {
-	request := s.factory.NewClient(ctx).Get
-	minAmount, err := httpclient.HandleRequest[MinAmountResponse](
-		request, fmt.Sprintf("/range/%s/%s", from, to), http.StatusOK)
-	if err != nil {
-		return 0, err
-	}
-
-	return minAmount.MinAmount, nil
-}
-
-// CreateExchange crea un intercambio real
-func (s *stealthexClientImpl) CreateExchange(ctx context.Context,
-	req models.SwapRequest) (*models.SwapResponse, error) {
-
-	request := s.factory.NewClient(ctx).
-		WithBody(NewExchangePayload(req)).
+		WithBody(payload).
 		Post
 
-	exchange, err := httpclient.HandleRequest[ExchangeResponse](
-		request, "/exchange", http.StatusCreated)
+	quote, err := httpclient.HandleRequest[entities.QuoteResponse](
+		request, "/rates/estimated-amount", http.StatusOK)
 	if err != nil {
-		return nil, err
+		return models.Quote{}, apierrors.NewApiError(apierrors.InternalServerError, err)
 	}
 
-	return exchange.ToSwapResponse(req.From, req.To), nil
-}
-
-// GetExchangeStatus obtiene el estado de un intercambio
-func (s *stealthexClientImpl) GetExchangeStatus(ctx context.Context, id string) (string, error) {
-	request := s.factory.NewClient(ctx).Get
-	exchange, err := httpclient.HandleRequest[ExchangeResponse](
-		request, fmt.Sprintf("/exchange/%s", id), http.StatusOK)
-	if err != nil {
-		return "", err
-	}
-
-	return exchange.Status, nil
+	return quote.ToQuote(from, to), nil
 }

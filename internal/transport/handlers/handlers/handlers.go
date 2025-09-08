@@ -35,7 +35,9 @@ func (h *handlersImpl) GetV1Currencies(c *gin.Context, params GetV1CurrenciesPar
 }
 
 func (h *handlersImpl) GetV1Quotes(c *gin.Context, params GetV1QuotesParams) {
-	quote, err := h.service.GetQuote(c, toPair(params.From), toPair(params.To), params.Amount)
+	fromPair := toPair(params.FromSymbol, params.FromNetwork)
+	toPair := toPair(params.ToSymbol, params.ToNetwork)
+	quote, err := h.service.GetQuote(c, fromPair, toPair, params.Amount)
 	if err != nil {
 		h.handler.Error(c, err)
 		return

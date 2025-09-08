@@ -28,10 +28,10 @@ func toNetworks(networks []models.NetworkPair) []Network {
 	})
 }
 
-func toPair(pair NetworkPair) models.NetworkPair {
+func toPair(symbol, network string) models.NetworkPair {
 	return models.NetworkPair{
-		Symbol:  pair.Symbol,
-		Network: pair.Network,
+		Symbol:  symbol,
+		Network: network,
 	}
 }
 

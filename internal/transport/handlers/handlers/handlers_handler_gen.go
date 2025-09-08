@@ -95,33 +95,63 @@ func (siw *ServerInterfaceWrapper) GetV1Quotes(c *gin.Context) {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetV1QuotesParams
 
-	// ------------- Required query parameter "from" -------------
+	// ------------- Required query parameter "fromSymbol" -------------
 
-	if paramValue := c.Query("from"); paramValue != "" {
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Query argument from is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "from", c.Request.URL.Query(), &params.From)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter from: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Required query parameter "to" -------------
-
-	if paramValue := c.Query("to"); paramValue != "" {
+	if paramValue := c.Query("fromSymbol"); paramValue != "" {
 
 	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Query argument to is required, but not found"), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Query argument fromSymbol is required, but not found"), http.StatusBadRequest)
 		return
 	}
 
-	err = runtime.BindQueryParameter("form", true, true, "to", c.Request.URL.Query(), &params.To)
+	err = runtime.BindQueryParameter("form", true, true, "fromSymbol", c.Request.URL.Query(), &params.FromSymbol)
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter to: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter fromSymbol: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "fromNetwork" -------------
+
+	if paramValue := c.Query("fromNetwork"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument fromNetwork is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "fromNetwork", c.Request.URL.Query(), &params.FromNetwork)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter fromNetwork: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "toSymbol" -------------
+
+	if paramValue := c.Query("toSymbol"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument toSymbol is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "toSymbol", c.Request.URL.Query(), &params.ToSymbol)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter toSymbol: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "toNetwork" -------------
+
+	if paramValue := c.Query("toNetwork"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument toNetwork is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "toNetwork", c.Request.URL.Query(), &params.ToNetwork)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter toNetwork: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -189,20 +219,20 @@ func RegisterHandlersWithOptions(router gin.IRouter, siAny any, optionsAny any) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7RVSW/bOhD+KwZfbs+RlJd3SHVqEKBFUDQLHOQSuMBYHttMxcVDyoEb+L8XJC3JWrwE",
-	"RW+2Zuabhd98884yJbSSKK1h6Tsz2QIF+J83BRHKbO1+a1IayXL0FphOCY15hpxPwXIl3Ue71shSZixx",
-	"OWebIYMV8BwmOe5YJ0rlCNKZuYA59gZKEHsMaN8U/fQ1cIvC/zgjnLGU/RPXjcTbLuK7EOBit2BABGv3",
-	"XxPPfJaZIgGWpWyqClds5SoLMUFyvmYtJirvKWkzZITLghNOWfoSCq/cyxZ3J1HmHfbMcKe/cVWEmrxi",
-	"Zl0RZS+d19gzrr7aDuA+AKce7DrpoTmPQseNUZ3i36qxGlyZtq/ex0JZ7OGkUIW0Jz7ojJQ4kTt+Lq5O",
-	"Vdh+Vlr1IahWzwF3W5IHG5a99HU/quarwVokyVL24wXOfyXnn8b/ntXNVjRwqyZnvsZMSQuZHxIK4DlL",
-	"y0+fDdcLJSPzBpqVG8hG/uNgFD4W5AIW1mqTxvFuwGbIpmgy4jqIQRnojIPrh1s2ZDnPUBqs+cq+3z51",
-	"QJVGaVRBGUaK5vE2yMTO102a2xy78IPzwb1G6X5dRgkbshWSCYVcREmUuFCHDJqzlF1GSfS/W0SwC8+c",
-	"eHURZ0Hrtlyao59Rs6evaAc7bh6S/ObeToP5+eJm166BQKBFMix9aaPdgcCBmg3sAkvUtVMMZ1sWSOv6",
-	"FUpV8WQ6fbPaGR+ULnKgZg99+XRwbKRsy3cX/jqzfIXH0cH7fRA8dLUP0lTWGrM6D911bRyCzdito9HK",
-	"8cz5/5ck5apg0BPQOueZf+n41YRj15Po0KtUp7Sbv7M799+8RphCCKB1l3jO6Ci7dDp4mK7epZ+pjyH6",
-	"CEu/kBLH6LkVrlrTLBV4Kl1bytjO/6SOZfd6+VdyXwcR3sPi0rg/dfcMCS65KARLk85J+mMaHmo0XMxT",
-	"qbasvQ3SqiRGLdRpHOcqg3yhjE2vkiunr+8tIQfNo8aFcLcM5n0ca2jmdry7dB9vfgcAAP//4tMnVaQK",
-	"AAA=",
+	"H4sIAAAAAAAC/7RWTW/jRgz9K8Z0b3UkpdvDVqcGC7QIimazcJBL4AK0TNuTaoZjzsiBG/i/FzNjSbYl",
+	"fwTZ3GSRfOSjHkm/ioKUIY3aWZG/ClssUEF4/Foxoy7W/tkwGWQnMVhgOmW09hFKOQUnSfuXbm1Q5MI6",
+	"lnouNkMBK5AlTErcsU6ISgTtzVLBHHsDNagjBnQvxP+GGqRDFR4+Mc5ELn5KWyLplkV6FwN87BYMmGHt",
+	"fxuWRcgyI1bgRC6mVPliG1ddqQmy97VrNaGyp6TNUDAuK8k4FflTLLxxrynudqLOO+zp4Q6/cVMETZ6x",
+	"cL6ImkvnaxxpV19tJ3DvQXIPdpv0VJ9HkfFeqy7xP6ixaVydtq/e7xU57NGkokq7Cz/ojEldqJ3QF18n",
+	"Va5flY7eBHXAOeJuSwpgw5pLH/tR018DziFrkYt/nuDqv+zqt/HPn1qyjQz8qOlZqLEg7aAITUIFshR5",
+	"/ep3K82CdGJfwIh6AsUovByM4suKfcDCOWPzNN0N2AzFFG3B0sRlUAd64+Dm/lYMRSkL1BZbvYq/bx86",
+	"oGRQW6q4wIR4nm6DbOp9faelK7ELP7gafDOo/dPnJBNDsUK2sZDrJEsyH+qRwUiRi89JlvzqBxHcIign",
+	"XV2nRdx1Wy3NMfRon9Of6AY7bgGSw+TeTqP58frrrt0Ag0KHbEX+dIh2BwoHNBu4Bdaoa78xvG1ZIa/b",
+	"r1BvlSCmyyfrMOM9maoE3ufQl89Ex72Uh+u7C39TOLnC8+gQ/N4IHlkdg7SNtcVszkN3XPcOwWbsx9Ea",
+	"8jrz/r9kWT0qGPcJGFPKInzp9NnGY9eT6NRXaU5pN39ndr79FXaErZQCXneF541esku/B0/LNbj0K/V7",
+	"jD6j0j+Y1Dl5+sU1qhd3u9kcV/h+0YYC6mtwPP9d4/GjC3igc/wdfRj7BzrD3dHHMb+JR+jIFNfG41m7",
+	"Z1hJLVWlRJ51TvK7x/AUx/iP4dJRW7beFnlVD0Z7qPI0LamAckHW5V+yL/6+vB4cMjAy2buQ/pbDvG/G",
+	"9m7Gtr274z7e/B8AAP//2H7shaQLAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
