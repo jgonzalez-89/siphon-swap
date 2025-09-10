@@ -13,7 +13,7 @@ Exchange aggregator minimalista con HTMX + Go
 
 ## 📁 Estructura
 
-\`\`\`
+\\\
 cryptoswap/
 ├── main.go                 # Entry point
 ├── .env                    # API keys (no commitear!)
@@ -29,76 +29,67 @@ cryptoswap/
 │   └── cache.go           # Cache en memoria
 │
 ├── exchanges/             # Clientes API
-│   ├── changenow.go       
-│   ├── simpleswap.go      
-│   ├── stealthex.go       
-│   └── letsexchange.go       
+│   ├── changenow.go
+│   ├── simpleswap.go
+│   ├── stealthex.go
+│   └── letsexchange.go
 │
 ├── models/                # Tipos compartidos
-│   └── types.go           
+│   └── types.go
 │
 └── static/                # Frontend
-    └── index.html         
-\`\`\`
+    └── index.html
+\\\
 
 ## 🚀 Quick Start
 
 ### 1. Clonar y configurar
 
-\`\`\`bash
+```bash
 # Crear estructura
-mkdir -p cryptoswap/{handlers,services,exchanges,models,static}
-cd cryptoswap
-
-# Crear archivos (copiar el código de cada archivo)
-touch main.go .env go.mod
-touch models/types.go
-touch exchanges/{changenow,simpleswap,stealthex,letsexchange}.go
-touch services/{aggregator,cache}.go
-touch handlers/{quote,currencies,swap}.go
-touch static/index.html
-\`\`\`
+git clone
+```
 
 ### 2. Configurar API Keys
 
 Editar `.env` con tus keys:
 
-\`\`\`env
+```env
 CHANGENOW_API_KEY=tu_key_aqui
 SIMPLESWAP_API_KEY=tu_key_aqui
 STEALTHEX_API_KEY=tu_key_aqui
 LETSEXCHANGE_API_KEY=tu_key_aqui
-\`\`\`
+```
 
 ### 3. Instalar dependencias
 
-\`\`\`bash
+```bash
 go mod init cryptoswap
 go get github.com/gorilla/mux github.com/joho/godotenv
-\`\`\`
+```
 
 ### 4. Ejecutar
 
-\`\`\`bash
+```bash
 go run main.go
-\`\`\`
+```
 
 Abrir http://localhost:8080
 
 ## 📊 API Endpoints
 
 ### Get Currencies
-\`\`\`bash
+```bash
 curl http://localhost:8080/api/currencies
-\`\`\`
+```
 
 ### Get Quote
-\`\`\`bash
+```bash
 curl "http://localhost:8080/api/quote?from=btc&to=eth&amount=0.1"
-\`\`\`
+```
 
 ### Create Swap
-\`\`\`bash
+```bash
 curl -X POST http://localhost:8080/api/swap \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -108,48 +99,18 @@ curl -X POST http://localhost:8080/api/swap \\
     "to_address": "0x...",
     "exchange": "ChangeNOW"
   }'
-\`\`\`
+```
 
 ## 🔧 Desarrollo
-
-### Hot Reload
-\`\`\`bash
-go install github.com/cosmtrek/air@latest
-air
-\`\`\`
-
 ### Tests
-\`\`\`bash
+```bash
 go test ./...
-\`\`\`
+```
 
-### Build
-\`\`\`bash
-go build -o cryptoswap
-./cryptoswap
-\`\`\`
-
-## 🐳 Docker
-
-\`\`\`dockerfile
-FROM golang:1.21-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o cryptoswap main.go
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/cryptoswap .
-COPY --from=builder /app/static ./static
-EXPOSE 8080
-CMD ["./cryptoswap"]
-\`\`\`
-
-\`\`\`bash
-docker build -t cryptoswap .
-docker run -p 8080:8080 --env-file .env cryptoswap
-\`\`\`
+### Docker Build
+```bash
+make docker.build
+```
 
 ## 📈 Próximos Pasos
 
@@ -163,7 +124,7 @@ docker run -p 8080:8080 --env-file .env cryptoswap
 ## 📝 Licencia
 
 MIT
-\`\`\`
+
 
 ## `Makefile` - Comandos útiles
 
@@ -208,3 +169,4 @@ docker-build: ## Build Docker image
 .PHONY: docker-run
 docker-run: ## Run con Docker
 	docker run -p 8080:8080 --env-file .env cryptoswap:latest
+```

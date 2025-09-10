@@ -1,0 +1,337 @@
+openapi: 3.0.4
+info:
+  title: Siphon swap API - OpenAPI 3.0
+  description: |-
+    Siphon swap API
+
+  version: 1.0.0
+  contact:
+    name: Siphon Swap
+    url: https://siphon.swap
+    email: contact@siphon.swap
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8080
+  - url: https://api.siphon.swap
+tags:
+  - name: currencies
+    description: Currencies
+paths:
+  /v1/currencies:
+    get:
+      summary: Get currencies
+      description: Get currencies
+      parameters:
+        - name: name
+          in: query
+          description: Name of the currency
+          required: false
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: popular
+          in: query
+          description: Popular currencies
+          required: false
+          schema:
+            type: boolean
+        - name: active
+          in: query
+          description: Active currencies
+          required: false
+          schema:
+            type: boolean
+        - name: symbols
+          in: query
+          description: Symbols
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Currency'
+        '500':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/quotes:
+    get:
+      summary: Get quote
+      description: Get quote
+      parameters:
+        - name: fromSymbol
+          in: query
+          description: From currency
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: fromNetwork
+          in: query
+          description: From network
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: toSymbol
+          in: query
+          description: To currency
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: toNetwork
+          in: query
+          description: To network
+          required: true
+          schema:
+            $ref: '#/components/schemas/Symbol'
+        - name: amount
+          in: query
+          description: Amount
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Quote'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/swaps:
+    post:
+      summary: Create swap
+      description: Create swap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwapRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Swap'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/swaps/{id}:
+    get:
+      summary: Get swap
+      description: Get swap
+      parameters:
+        - name: id
+          in: path
+          description: Swap ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Swap'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    Symbol:
+      type: string
+      pattern: '^[a-z0-9]+$'
+
+    NetworkPair:
+      type: object
+      properties:
+        symbol:
+          $ref: '#/components/schemas/Symbol'
+        network:
+          $ref: '#/components/schemas/Symbol'
+      required:
+        - symbol
+        - network
+
+    Currency:
+      type: object
+      properties:
+        name:
+          type: string
+        symbol:
+          type: string
+        image:
+          type: string
+        available:
+          type: boolean
+        price:
+          type: number
+          format: double
+        addressValidation:
+          type: string
+        networks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Network'
+      required:
+        - name
+        - symbol
+        - image
+        - available
+        - price
+        - addressValidation
+        - networks
+
+    Network:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    Quote:
+      type: object
+      properties:
+        from:
+          $ref: '#/components/schemas/NetworkPair'
+        to:
+          $ref: '#/components/schemas/NetworkPair'
+        amount:
+          type: number
+          format: double
+        exchange:
+          type: string
+        difference:
+          type: number
+          format: double
+      required:
+        - from
+        - to
+        - amount
+        - exchange
+        - difference
+
+    SwapRequest:
+      type: object
+      properties:
+        from:
+          $ref: '#/components/schemas/NetworkPair'
+        to:
+          $ref: '#/components/schemas/NetworkPair'
+        amount:
+          type: number
+          format: double
+          minimum: 0
+        toAddress:
+          type: string
+        refundAddress:
+          type: string
+        exchange:
+          type: string
+      required:
+        - from
+        - to
+        - amount
+        - refundAddress
+        - toAddress
+        - exchange
+
+    Swap:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        from:
+          $ref: '#/components/schemas/NetworkPair'
+        to:
+          $ref: '#/components/schemas/NetworkPair'
+        toAddress:
+          type: string
+        exchange:
+          type: string
+        reason:
+          type: string
+        refundAddress:
+          type: string
+        payoutAddress:
+          type: string
+        payinAmount:
+          type: number
+          format: double
+        payoutAmount:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - status
+        - createdAt
+        - updatedAt
+        - from
+        - to
+        - payinAmount
+        - toAddress
+        - exchange
+        - reason
+        - payoutAddress
+        - payoutAmount
+        - refundAddress

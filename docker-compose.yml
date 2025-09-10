@@ -1,0 +1,63 @@
+services:
+  api:
+    image: cryptoswap:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin123
+      - MYSQL_ROOT_HOST=root
+      - CONFIG_PATH=/opt/cryptoswap/config/config.yml
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=admin123
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: ./config/config.yml
+        target: /opt/cryptoswap/config/config.yml
+    depends_on:
+      - mysql
+      - rabbitmq
+    command: ["/opt/cryptoswap/cryptoswap"]
+
+  mysql:
+    image: mysql/mysql-server:8.0.32
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin123
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_HOST=%
+    volumes:
+      - type: bind
+        source: ./config/db
+        target: /docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 6s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+    volumes:
+      - type: bind
+        source: ./rabbitmq.conf
+        target: /etc/rabbitmq/rabbitmq.conf
+      - type: bind
+        source: ./rabbitmq-defs.json
+        target: /etc/rabbitmq/rabbitmq-defs.json
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      timeout: 15s
+      retries: 4

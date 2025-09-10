@@ -1,56 +1,36 @@
 package middlewares
 
 import (
+	"cryptoswap/internal/lib/constants"
+	"cryptoswap/internal/lib/ids"
 	"cryptoswap/internal/lib/logger"
-	"net/http"
-	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 // LoggingMiddleware logs the end of the request with detailed information
-func LoggingMiddleware(logger logger.Logger) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			startTime := time.Now()
+func LoggingMiddleware(logger logger.Logger) gin.HandlerFunc {
+	return gin.HandlerFunc(func(ctx *gin.Context) {
+		setRequestId(ctx)
 
-			// Create a custom response writer to capture status code and response size
-			wrappedWriter := &responseWriter{
-				ResponseWriter: w,
-				statusCode:     http.StatusOK, // Default status code
-			}
+		startTime := time.Now()
+		logger.Infof(ctx, "Incoming [%s] request to %s", ctx.Request.Method, ctx.Request.URL.Path)
+		ctx.Next()
 
-			next.ServeHTTP(wrappedWriter, r)
+		duration := time.Since(startTime)
 
-			// Don't log static files
-			if strings.HasPrefix(r.URL.Path, "/api") {
-				// Log with appropriate level and detailed information
-				logger.Infof(ctx, "✅ [%s] %s %s - %d ms",
-					r.Method,
-					r.URL.Path,
-					http.StatusText(wrappedWriter.statusCode),
-					time.Since(startTime).Milliseconds())
-			}
-		})
+		logger.Infof(ctx, "Finished [%s] request to %s with %d status code in %d ms",
+			ctx.Request.Method,
+			ctx.Request.URL.Path,
+			ctx.Writer.Status(),
+			duration.Milliseconds(),
+		)
+	})
+}
+
+func setRequestId(ctx *gin.Context) {
+	if _, ok := ctx.Get(constants.RequestId); !ok {
+		ctx.Set(constants.RequestId, ids.NewRequestId())
 	}
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code and response size
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-	size       int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	size, err := rw.ResponseWriter.Write(b)
-	rw.size += size
-	return size, err
 }

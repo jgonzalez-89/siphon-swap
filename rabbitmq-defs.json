@@ -1,0 +1,123 @@
+{
+  "users": [
+    {
+      "name": "myuser",
+      "password": "mypassword",
+      "tags": "administrator"
+    },
+    {
+      "name": "consumer",
+      "password": "qweqwe",
+      "tags": ""
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "myuser",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "consumer",
+      "vhost": "/",
+      "configure": "",
+      "write": "",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "app.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "app.events.retry",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "app.events.error",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "app.events.q",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-dead-letter-exchange": "app.events.retry",
+        "x-dead-letter-routing-key": "retry"
+      }
+    },
+    {
+      "name": "app.events.q.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": "app.events"
+      }
+    },
+    {
+      "name": "app.events.q.error",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "app.events",
+      "vhost": "/",
+      "destination": "app.events.q",
+      "destination_type": "queue",
+      "routing_key": "cryptoswap.*",
+      "arguments": {}
+    },
+    {
+      "source": "app.events.retry",
+      "vhost": "/",
+      "destination": "app.events.q.retry",
+      "destination_type": "queue",
+      "routing_key": "retry",
+      "arguments": {}
+    },
+    {
+      "source": "app.events.error",
+      "vhost": "/",
+      "destination": "app.events.q.error",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}
