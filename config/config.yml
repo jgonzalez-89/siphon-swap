@@ -14,8 +14,8 @@ database:
 messaging:
   host: ${RABBITMQ_HOST:-rabbitmq}
   port: ${RABBITMQ_PORT:-5672}
-  user: ${RABBITMQ_USER:-guest}
-  password: ${RABBITMQ_PASSWORD:-guest}
+  user: ${RABBITMQ_USER:-myuser}
+  password: ${RABBITMQ_PASSWORD:-mypassword}
   exchange: ${RABBITMQ_EXCHANGE:-app.events}
   prefetch_count: ${RABBITMQ_PREFETCH_COUNT:-1}
   max_reconnects: ${RABBITMQ_MAX_RECONNECTS:-5}

@@ -4,8 +4,14 @@ services:
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=admin123
-      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_HOST=root
       - CONFIG_PATH=/opt/cryptoswap/config/config.yml
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=admin123
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
     ports:
       - "8080:8080"
     env_file:
