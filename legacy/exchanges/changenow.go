@@ -137,7 +137,7 @@ func (c *ChangeNow) GetMinAmount(from, to string) (float64, error) {
 }
 
 // CreateExchange crea un intercambio real
-func (c *ChangeNow) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
+func (c *ChangeNow) CreateExchange(req models.Swap) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
 		"from":          req.From,

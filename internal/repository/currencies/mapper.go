@@ -31,3 +31,24 @@ func toPairSlice(currencies []models.NetworkPair) [][]string {
 		return []string{currency.Symbol, currency.Network}
 	})
 }
+
+func toSwapEntity(swap models.Swap) Swap {
+	return Swap{
+		Id:            swap.Id,
+		FromSymbol:    swap.From.Symbol,
+		FromNetwork:   swap.From.Network,
+		ToSymbol:      swap.To.Symbol,
+		ToNetwork:     swap.To.Network,
+		PayinAmount:   swap.PayinAmount,
+		PayoutAmount:  swap.PayoutAmount,
+		PayoutAddress: swap.PayoutAddress,
+		ToAddress:     swap.ToAddress,
+		RefundAddress: swap.RefundAddress,
+		Exchange:      swap.Exchange,
+		Status:        swap.Status,
+		CreatedAt:     swap.CreatedAt,
+		UpdatedAt:     swap.UpdatedAt,
+		ExchangeId:    swap.ExchangeId,
+		Reason:        swap.Reason,
+	}
+}

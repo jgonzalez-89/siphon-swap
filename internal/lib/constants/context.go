@@ -22,6 +22,10 @@ func GetRequestId(ctx context.Context) string {
 	return ctx.Value(RequestId).(string)
 }
 
+func SetRequestId(ctx context.Context, requestId string) context.Context {
+	return context.WithValue(ctx, RequestId, requestId)
+}
+
 func AddRequestIdToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx,
 		RequestId, ids.NewRequestId())

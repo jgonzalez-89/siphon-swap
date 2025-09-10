@@ -34,7 +34,7 @@ func NewStealthExRepository(logger logger.Logger,
 	}
 }
 
-func (s *stealthexClientImpl) GetName() string {
+func (s *stealthexClientImpl) GetExchangeName() string {
 	return stealthEx
 }
 
@@ -88,7 +88,7 @@ func (s *stealthexClientImpl) GetQuote(ctx context.Context, from, to models.Netw
 	quote, err := httpclient.HandleRequest[entities.QuoteResponse](
 		request, "/rates/estimated-amount", http.StatusOK)
 	if err != nil {
-		return models.Quote{}, apierrors.NewApiError(apierrors.InternalServerError, err)
+		return models.Quote{}, apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return quote.ToQuote(from, to), nil

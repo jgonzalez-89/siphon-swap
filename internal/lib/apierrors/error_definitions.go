@@ -3,15 +3,15 @@ package apierrors
 import "net/http"
 
 var (
-	InternalServerError = ErrorDefinition{
+	InternalServer = ErrorDefinition{
 		Code:    http.StatusInternalServerError,
 		message: "Internal server error",
 	}
-	BadRequestError = ErrorDefinition{
+	BadRequest = ErrorDefinition{
 		Code:    http.StatusBadRequest,
 		message: "Bad request",
 	}
-	NotFoundError = ErrorDefinition{
+	NotFound = ErrorDefinition{
 		Code:    http.StatusNotFound,
 		message: "Not found",
 	}

@@ -35,7 +35,7 @@ func (cr *currenciesRepository) GetCurrencies(ctx context.Context,
 		Find(&entities).
 		Error; err != nil {
 		cr.logger.Infof(ctx, "Error getting currencies from the database: %v", err)
-		return nil, apierrors.NewApiError(apierrors.InternalServerError, err)
+		return nil, apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return entities.ToModel(), nil
@@ -57,7 +57,7 @@ func (cr *currenciesRepository) GetCurrenciesByPairs(ctx context.Context,
 		Where("symbol IN (?)", symbols).
 		Find(&entities).
 		Error; err != nil {
-		return nil, apierrors.NewApiError(apierrors.InternalServerError, err)
+		return nil, apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return entities.ToModel(), nil
@@ -101,7 +101,7 @@ func (cr *currenciesRepository) InsertCurrencies(ctx context.Context, currencies
 		return nil
 	}); err != nil {
 		cr.logger.Infof(ctx, "Error inserting currencies into the database: %v", err)
-		return apierrors.NewApiError(apierrors.InternalServerError, err)
+		return apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return nil
@@ -118,7 +118,49 @@ func (cr *currenciesRepository) UpdatePrices(ctx context.Context, currencies []m
 		Columns:   []clause.Column{{Name: "symbol"}},
 		DoUpdates: clause.AssignmentColumns([]string{"price"}),
 	}).Create(&entities).Error; err != nil {
-		return apierrors.NewApiError(apierrors.InternalServerError, err)
+		return apierrors.NewApiError(apierrors.InternalServer, err)
+	}
+
+	return nil
+}
+
+func (cr *currenciesRepository) GetSwap(ctx context.Context, id string) (models.Swap, *apierrors.ApiError) {
+	cr.logger.Infof(ctx, "Getting swap from the database")
+
+	entity := Swap{}
+	if err := cr.db.Where("id = ?", id).First(&entity).Error; err != nil {
+		return models.Swap{}, apierrors.NewApiError(apierrors.InternalServer, err)
+	}
+
+	return entity.ToModel(), nil
+}
+
+func (cr *currenciesRepository) InsertSwap(ctx context.Context, swap models.Swap) (models.Swap, *apierrors.ApiError) {
+	cr.logger.Infof(ctx, "Inserting swap into the database")
+
+	entity := toSwapEntity(swap)
+	if err := cr.db.WithContext(ctx).
+		Create(&entity).
+		First(&entity).
+		Error; err != nil {
+		return models.Swap{}, apierrors.NewApiError(apierrors.InternalServer, err)
+	}
+
+	return entity.ToModel(), nil
+}
+
+func (cr *currenciesRepository) UpdateSwap(ctx context.Context, swap models.Swap) *apierrors.ApiError {
+	cr.logger.Infof(ctx, "Updating swap in the database")
+
+	entity := toSwapEntity(swap)
+	if err := cr.db.WithContext(ctx).
+		Model(&Swap{}).
+		Where("id = ?", entity.Id).
+		Updates(map[string]any{
+			"status": entity.Status,
+			"reason": entity.Reason,
+		}).Error; err != nil {
+		return apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return nil

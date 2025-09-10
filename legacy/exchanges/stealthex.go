@@ -166,7 +166,7 @@ func (s *StealthEx) GetMinAmount(from, to string) (float64, error) {
 }
 
 // CreateExchange crea un intercambio real
-func (s *StealthEx) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
+func (s *StealthEx) CreateExchange(req models.Swap) (*models.SwapResponse, error) {
 	// Preparar el request body
 	exchangeReq := map[string]interface{}{
 		"currency_from":  req.From,

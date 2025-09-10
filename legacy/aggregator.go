@@ -38,7 +38,7 @@ type Exchange interface {
 	GetCurrencies() ([]models.Currency, error)
 	GetQuote(from, to string, amount float64) (*models.Quote, error)
 	GetMinAmount(from, to string) (float64, error)
-	CreateExchange(req models.SwapRequest) (*models.SwapResponse, error)
+	CreateExchange(req models.Swap) (*models.SwapResponse, error)
 }
 
 type ExchangeManager interface {
@@ -46,7 +46,7 @@ type ExchangeManager interface {
 	GetCurrencies(ctx context.Context) ([]models.Currency, error)
 	GetQuote(ctx context.Context, from, to string, amount float64) (*models.Quote, error)
 	GetMinAmount(ctx context.Context, from, to string) (float64, error)
-	CreateExchange(ctx context.Context, req models.SwapRequest) (*models.SwapResponse, error)
+	CreateExchange(ctx context.Context, req models.Swap) (*models.SwapResponse, error)
 }
 
 // Aggregator coordina múltiples exchanges
@@ -273,7 +273,7 @@ func (a *Aggregator) GetMinAmounts(ctx context.Context, from, to string) map[str
 }
 
 // CreateExchange crea un intercambio en el exchange especificado
-func (a *Aggregator) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
+func (a *Aggregator) CreateExchange(req models.Swap) (*models.SwapResponse, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 

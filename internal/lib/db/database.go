@@ -19,7 +19,7 @@ type Config struct {
 }
 
 func NewGorm(config Config, logger logger.Logger) (*gorm.DB, error) {
-	uri := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.User, config.Password, config.Host,
+	uri := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", config.User, config.Password, config.Host,
 		config.Port, config.Schema)
 
 	return gorm.Open(mysql.Open(uri), &gorm.Config{

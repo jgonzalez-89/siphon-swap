@@ -1,4 +1,6 @@
 ---
+daemon:
+  enabled: ${DAEMON_ENABLED:-false}
 server:
   port: ${SERVER_PORT:-8080}
 logger:
@@ -9,6 +11,15 @@ database:
   user: ${MYSQL_USER:-root}
   password: ${MYSQL_PASSWORD:-admin123}
   schema: cryptoswap
+messaging:
+  host: ${RABBITMQ_HOST:-rabbitmq}
+  port: ${RABBITMQ_PORT:-5672}
+  user: ${RABBITMQ_USER:-guest}
+  password: ${RABBITMQ_PASSWORD:-guest}
+  exchange: ${RABBITMQ_EXCHANGE:-app.events}
+  prefetch_count: ${RABBITMQ_PREFETCH_COUNT:-1}
+  max_reconnects: ${RABBITMQ_MAX_RECONNECTS:-5}
+  reconnect_delay: ${RABBITMQ_RECONNECT_DELAY:-1}
 exchanges:
   change_now:
     api_key: ${CHANGENOW_API_KEY:-XXXX}

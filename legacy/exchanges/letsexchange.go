@@ -335,7 +335,7 @@ func (l *LetsExchange) GetMinAmount(from, to string) (float64, error) {
 }
 
 // CreateExchange crea un intercambio real vía POST /v1/transaction
-func (l *LetsExchange) CreateExchange(req models.SwapRequest) (*models.SwapResponse, error) {
+func (l *LetsExchange) CreateExchange(req models.Swap) (*models.SwapResponse, error) {
 	// Asegura redes por defecto
 	if err := l.ensureDefaultNetworksLoaded(); err != nil {
 		// continúa con fallback

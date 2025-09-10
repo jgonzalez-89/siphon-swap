@@ -7,14 +7,17 @@ import (
 	"cryptoswap/internal/lib/db"
 	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
+	"cryptoswap/internal/lib/messaging"
 	"cryptoswap/internal/lib/middlewares"
 	"cryptoswap/internal/lib/server"
 	"cryptoswap/internal/repository/currencies"
 	"cryptoswap/internal/repository/http/changenow"
 	"cryptoswap/internal/repository/http/coingecko"
 	"cryptoswap/internal/repository/http/stealthex"
+	"cryptoswap/internal/repository/rabbitmq"
 	currService "cryptoswap/internal/services/currencies"
 	"cryptoswap/internal/services/daemon"
+	"cryptoswap/internal/transport/consumer"
 	currHandlers "cryptoswap/internal/transport/handlers/handlers"
 	"time"
 
@@ -36,6 +39,13 @@ func main() {
 	db, err := db.NewGorm(db.Config(cfg.Database), fact.NewLogger("gorm"))
 	if err != nil {
 		mainLogger.Fatalf(ctx, "error connecting to database: %v", err)
+	}
+
+	msgConfig := messaging.NewConfig(cfg.Messaging,
+		[]messaging.Queue{messaging.NewQueue("app.events.q")})
+	msgConn, err := messaging.NewConnection(fact.NewLogger("messaging"), msgConfig)
+	if err != nil {
+		mainLogger.Fatalf(ctx, "error creating messaging connection: %v", err)
 	}
 
 	// Repositories:
@@ -64,15 +74,21 @@ func main() {
 
 	currDB := currencies.NewDB(fact.NewLogger("database"), db)
 
+	msgNotifier := rabbitmq.NewExchangeNotifier(fact.NewLogger("messaging"), msgConn)
+
 	// Services:
 	currencyManager := daemon.NewCurrencyManager(fact.NewLogger("daemon"), currDB, coingecko,
 		changenow, stealthex)
 
-	currencyService := currService.NewCurrencyService(fact.NewLogger("currency_service"), currDB)
+	currencyService := currService.NewCurrencyService(fact.NewLogger("currency_service"), currDB,
+		msgNotifier, changenow, stealthex)
 
 	// Handlers:
 	currencyHandler := currHandlers.NewHandlers(fact.NewLogger("handlers"),
 		api.NewResponseManager(), currencyService)
+
+	consumerHandler := consumer.NewMessagingConsumer(fact.NewLogger("consumer"), currencyService).
+		Build()
 
 	// Server:
 	router := gin.New()
@@ -87,7 +103,8 @@ func main() {
 		Build()
 
 	// Run processes:
-	if false {
+	msgConn.Consume(ctx, consumerHandler)
+	if cfg.IsDaemonEnabled() {
 		go currencyManager.Start(ctx)
 	}
 

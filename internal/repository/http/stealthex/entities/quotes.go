@@ -32,8 +32,9 @@ type QuoteResponse struct {
 
 func (q *QuoteResponse) ToQuote(from, to models.NetworkPair) models.Quote {
 	return models.Quote{
-		From:   from,
-		To:     to,
-		Amount: q.EstimatedAmount,
+		From:     from,
+		To:       to,
+		Amount:   q.EstimatedAmount,
+		Exchange: stealthEx,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"cryptoswap/internal/lib/apierrors"
 	"cryptoswap/internal/lib/httpclient"
 	"cryptoswap/internal/lib/logger"
+	"cryptoswap/internal/services/interfaces"
 	"cryptoswap/internal/services/models"
 	"net/http"
 
@@ -14,6 +15,8 @@ import (
 const (
 	apiName = "ChangeNOW"
 )
+
+var _ interfaces.CurrencyFetcher = &changeNowRepository{}
 
 func NewChangeNowRepository(logger logger.Logger,
 	factory httpclient.Factory) *changeNowRepository {
@@ -28,7 +31,7 @@ type changeNowRepository struct {
 	factory httpclient.Factory
 }
 
-func (cn *changeNowRepository) GetName() string {
+func (cn *changeNowRepository) GetExchangeName() string {
 	return apiName
 }
 
@@ -37,10 +40,15 @@ func (cn *changeNowRepository) GetCurrencies(ctx context.Context) ([]models.Curr
 
 	currencies, err := httpclient.HandleRequest[[]Currency](request, "/exchange/currencies", http.StatusOK)
 	if err != nil {
-		return []models.Currency{}, apierrors.NewApiError(apierrors.InternalServerError, err)
+		return []models.Currency{}, apierrors.NewApiError(apierrors.InternalServer, err)
 	}
 
 	return lo.Map(currencies, func(curr Currency, _ int) models.Currency {
-		return curr.ToModel(cn.GetName())
+		return curr.ToModel(cn.GetExchangeName())
 	}), nil
+}
+
+func (cn *changeNowRepository) GetQuote(ctx context.Context, from, to models.NetworkPair,
+	amount float64) (models.Quote, *apierrors.ApiError) {
+	return models.Quote{}, nil
 }

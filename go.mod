@@ -17,6 +17,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/samber/lo v1.51.0
 	github.com/sirupsen/logrus v1.9.3
+	github.com/streadway/amqp v1.1.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.3
 )

@@ -11,6 +11,7 @@ type CashFetcher interface {
 }
 
 type CurrencyFetcher interface {
+	GetExchangeName() string
 	GetCurrencies(ctx context.Context) ([]models.Currency, *apierrors.ApiError)
 	GetQuote(ctx context.Context, from, to models.NetworkPair, amount float64) (models.Quote, *apierrors.ApiError)
 }
@@ -20,4 +21,15 @@ type CurrencyRepository interface {
 	GetCurrenciesByPairs(ctx context.Context, pairs ...models.NetworkPair) ([]models.Currency, *apierrors.ApiError)
 	InsertCurrencies(ctx context.Context, currencies []models.Currency) *apierrors.ApiError
 	UpdatePrices(ctx context.Context, currencies []models.Currency) *apierrors.ApiError
+	SwapRepository
+}
+
+type SwapRepository interface {
+	GetSwap(ctx context.Context, id string) (models.Swap, *apierrors.ApiError)
+	InsertSwap(ctx context.Context, swap models.Swap) (models.Swap, *apierrors.ApiError)
+	UpdateSwap(ctx context.Context, swap models.Swap) *apierrors.ApiError
+}
+
+type SwapNotifier interface {
+	NotifySwap(ctx context.Context, swap models.Swap) *apierrors.ApiError
 }

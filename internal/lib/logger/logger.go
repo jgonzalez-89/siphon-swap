@@ -34,6 +34,10 @@ type Logger interface {
 	Fatalf(ctx context.Context, format string, args ...any)
 }
 
+type LoggerFactory interface {
+	NewLogger(module string) Logger
+}
+
 func NewLoggerFactory(label, level string) LoggerFactory {
 	var logLevel logrus.Level
 	switch level {
@@ -48,20 +52,20 @@ func NewLoggerFactory(label, level string) LoggerFactory {
 	default:
 		logLevel = logrus.InfoLevel
 	}
-	return LoggerFactory{
+	return &factory{
 		level:    logLevel,
 		lvString: strings.ToUpper(level),
 		label:    label,
 	}
 }
 
-type LoggerFactory struct {
+type factory struct {
 	level    logrus.Level
 	lvString string
 	label    string
 }
 
-func (lf *LoggerFactory) NewLogger(module string) Logger {
+func (lf *factory) NewLogger(module string) Logger {
 	logger := &logrus.Logger{
 		Out:   os.Stdout,
 		Level: lf.level,
